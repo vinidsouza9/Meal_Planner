@@ -1,7 +1,7 @@
 import { pageMeta } from "@/lib/metadata";
 import { Loader2 } from "lucide-react";
 import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Clock, Pencil, Plus, Repeat, Search, Trash2, UtensilsCrossed, Zap } from "lucide-react";
@@ -285,18 +285,6 @@ function RecipesPage() {
                   <p className="mt-2 whitespace-pre-line text-sm">{viewing.steps}</p>
                 </section>
               )}
-            </div>
-            <div className="border-t p-4">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  if (viewing) setEditing({ id: viewing.id, draft: toDraft(viewing) });
-                  setViewing(null);
-                }}
-              >
-                <Pencil /> Edit
-              </Button>
             </div>
           </DialogContent>
         </Dialog>
