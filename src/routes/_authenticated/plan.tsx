@@ -134,7 +134,7 @@ function PlanPage() {
     );
   }
 
-  const shownDays: Day[] = plan.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
+  const shownDays: readonly Day[] = plan.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
   const shownMeals = plan.answers?.meals.length ? MEALS.filter((m) => plan.answers!.meals.includes(m)) : MEALS;
   const info = (day: Day, meal: Meal): CellInfo => {
     const c = plan.plan_json.days.find((x) => x.day === day)?.[meal];
