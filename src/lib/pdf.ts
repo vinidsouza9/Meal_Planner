@@ -49,12 +49,13 @@ export function buildPlanPdf(plan: PlanJson, recipes: Recipe[], weekStart: strin
   d.setFontSize(9);
   d.setTextColor(...GREY);
   MEALS.forEach((m, i) => {
+    const pastel = PASTELS[m === "breakfast" ? 2 : m === "lunch" ? 1 : 0];
+    if (pastel) { d.setFillColor(...pastel); d.roundedRect(32 + 92 + i * colW + 7, top - 18, 65, 14, 2, 2, "F"); }
     d.text(m.toUpperCase(), 32 + 92 + i * colW + 10, top - 8);
   });
 
   shownDays.forEach((day, r) => {
     const y = top + r * rowH;
-    const pastel = PASTELS[r % PASTELS.length]!;
     d.setDrawColor(220, 220, 220);
     d.setLineWidth(0.5);
     d.line(32, y + rowH - 8, W - 32, y + rowH - 8);

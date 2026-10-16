@@ -172,7 +172,7 @@
 .meal-dinner { background-color: var(--pastel-peach); }
 .meal-label-breakfast { color: var(--amber-foreground); }
 .meal-label-lunch { color: var(--secondary-foreground); }
-.meal-label-dinner { color: var(--foreground); }
+.meal-label-dinner { color: var(--dinner); }
 .tag-quick { background-color: var(--amber-soft); color: var(--amber-foreground); }
 .tag-leftover { background-color: var(--pastel-mint); border-style: dashed; }
 .photo-crop .reactEasyCrop_CropArea { color: var(--primary-foreground); border-color: var(--primary-foreground); }

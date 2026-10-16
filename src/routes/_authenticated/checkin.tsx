@@ -3,13 +3,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Plus, Sparkles, X } from "lucide-react";
+import { Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { CookingLoader, useSlowAction } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
+import { profileQuery } from "@/lib/profile";
 import { generatePlan } from "@/lib/ai.functions";
 import { DAYS, MEALS, upcomingMonday, weekRangeLabel, type CheckInAnswers, type Day } from "@/lib/plan";
 
@@ -22,7 +21,7 @@ const FRIDGE_SUGGESTIONS = ["Eggs", "Milk", "Chicken", "Spinach", "Tomatoes", "O
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <Button variant="outline" type="button" data-on={on} aria-pressed={on} onClick={onClick} className="chip">
+    <Button variant={on ? "default" : "outline"} type="button" data-on={on} aria-pressed={on} onClick={onClick} className="min-h-11 rounded-full border px-4">
       {children}
     </Button>
   );
@@ -34,10 +33,7 @@ function CheckIn() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const gen = useServerFn(generatePlan);
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: async () => (await supabase.from("profiles").select("household_size").maybeSingle()).data,
-  });
+  const { data: profile } = useQuery(profileQuery);
 
   const slow = useSlowAction();
   const [newItem, setNewItem] = useState("");

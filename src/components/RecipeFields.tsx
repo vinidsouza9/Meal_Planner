@@ -130,7 +130,7 @@ export function RecipeFields({ value, onChange, idPrefix = "r" }: { value: Recip
         <legend className="text-sm font-medium">Meal type</legend>
         <div className="flex flex-wrap gap-2">
           {MEAL_TYPES.map((m) => (
-            <Button key={m} variant="outline" type="button" className="chip capitalize" data-on={value.meal_types.includes(m)} aria-pressed={value.meal_types.includes(m)} onClick={() => set("meal_types", value.meal_types.includes(m) ? value.meal_types.filter((x) => x !== m) : [...value.meal_types, m])}>
+            <Button key={m} variant={value.meal_types.includes(m) ? "default" : "outline"} type="button" className="min-h-11 rounded-full border px-4 capitalize" data-on={value.meal_types.includes(m)} aria-pressed={value.meal_types.includes(m)} onClick={() => set("meal_types", value.meal_types.includes(m) ? value.meal_types.filter((x) => x !== m) : [...value.meal_types, m])}>
               {m}
             </Button>
           ))}
