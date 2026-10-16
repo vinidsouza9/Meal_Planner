@@ -21,7 +21,7 @@ const nextFrame = () => new Promise<void>((r) => setTimeout(r, 60));
 /** Share button: native share sheet with the PDF when supported, otherwise a download/WhatsApp/email menu. */
 export function ShareMenu({ build, title, message, emailSubject, disabled }: Props) {
   const [open, setOpen] = useState(false);
-  const pdf = useSlowAction("Creating the file took too long. Please try again.");
+  const pdf = useSlowAction();
 
   async function withFile(use: (f: File) => unknown | Promise<unknown>) {
     await pdf.run(async () => {
@@ -59,7 +59,7 @@ export function ShareMenu({ build, title, message, emailSubject, disabled }: Pro
       </DropdownMenu>
       {pdf.active && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 p-5 backdrop-blur-sm">
-          <CookingLoader task="pdf" error={pdf.error} onRetry={pdf.retry} onCancel={pdf.reset} className="w-full max-w-sm" />
+          <CookingLoader task="pdf" error={pdf.error} slow={pdf.status === "slow"} onRetry={pdf.retry} onCancel={pdf.reset} className="w-full max-w-sm" />
         </div>
       )}
     </>
