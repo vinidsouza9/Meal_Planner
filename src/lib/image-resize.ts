@@ -19,3 +19,12 @@ export async function resizeImage(file: File, maxW = 1600): Promise<{ mediaType:
     URL.revokeObjectURL(url);
   }
 }
+
+/** Resize an image file to at most `maxW` px wide, returned as a JPEG Blob plus a preview data URL. */
+export async function resizeImageBlob(file: File | Blob, maxW = 1200): Promise<{ blob: Blob; preview: string }> {
+  const { data, preview } = await resizeImage(file as File, maxW);
+  const bin = atob(data);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return { blob: new Blob([bytes], { type: "image/jpeg" }), preview };
+}
