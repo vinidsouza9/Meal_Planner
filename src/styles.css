@@ -156,3 +156,12 @@
   .print-hide { display: none !important; }
   body { background: white !important; color: black !important; }
 }
+
+/* Cooking loader animation */
+@keyframes cook-lid-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-2deg); } }
+@keyframes cook-steam-rise { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: 0.8; } 100% { opacity: 0; transform: translateY(-8px); } }
+.cook-lid { transform-origin: 40px 38px; animation: cook-lid-bob 1.4s ease-in-out infinite; }
+.cook-steam { opacity: 0; animation: cook-steam-rise 2s ease-out infinite; }
+.cook-steam-2 { animation-delay: 0.5s; }
+.cook-steam-3 { animation-delay: 1s; }
+@media (prefers-reduced-motion: reduce) { .cook-lid, .cook-steam { animation: none; } }
