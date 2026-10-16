@@ -27,24 +27,29 @@ export type Recipe = {
   is_quick: boolean;
   can_repeat: boolean;
   meal_type: MealType;
+  image_url: string | null;
+  /** Signed URL for image_url, filled in by queries. */
+  imageSrc?: string | null;
 };
 
 export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "any"] as const;
 export type MealType = (typeof MEAL_TYPES)[number];
 
-/** Swap two cells of the same meal type. Returns null if the move isn't allowed. */
+/** Swap any two cells (across days or meal types). Returns null if the move isn't allowed. */
 export function swapCells(plan: PlanJson, locked: string[], a: { day: Day; meal: Meal }, b: { day: Day; meal: Meal }): PlanJson | null {
-  if (a.meal !== b.meal) return null;
-  if (a.day === b.day) return null;
+  if (a.day === b.day && a.meal === b.meal) return null;
   if (locked.includes(cellKey(a.day, a.meal)) || locked.includes(cellKey(b.day, b.meal))) return null;
   const ca = plan.days.find((d) => d.day === a.day)?.[a.meal];
   const cb = plan.days.find((d) => d.day === b.day)?.[b.meal];
   if (!ca || !cb) return null;
   // A moved meal is freshly cooked where it lands, so the leftover flag is dropped.
   return {
-    days: plan.days.map((d) =>
-      d.day === a.day ? { ...d, [a.meal]: { recipe_id: cb.recipe_id, leftover: false } } : d.day === b.day ? { ...d, [b.meal]: { recipe_id: ca.recipe_id, leftover: false } } : d,
-    ),
+    days: plan.days.map((d) => {
+      let out = d;
+      if (d.day === a.day) out = { ...out, [a.meal]: { recipe_id: cb.recipe_id, leftover: false } };
+      if (d.day === b.day) out = { ...out, [b.meal]: { recipe_id: ca.recipe_id, leftover: false } };
+      return out;
+    }),
   };
 }
 
@@ -60,6 +65,36 @@ export function groceryText(items: GroceryItem[], title?: string): string {
 }
 
 export const cellKey = (day: Day, meal: Meal) => `${day}-${meal}`;
+
+/** True when a recipe over 20 minutes lands in dinner on a busy day (allowed, but worth a warning). */
+export function longDinnerOnBusyDay(answers: CheckInAnswers | null | undefined, recipe: Recipe | undefined, day: Day, meal: Meal): boolean {
+  return !!answers && meal === "dinner" && answers.busyDays.includes(day) && !!recipe && recipe.cook_time > 20;
+}
+
+/** Shift a week_start (YYYY-MM-DD) by whole weeks. */
+export function shiftWeek(weekStart: string, weeks: number): string {
+  const d = new Date(weekStart + "T00:00:00");
+  d.setDate(d.getDate() + weeks * 7);
+  return d.toISOString().slice(0, 10);
+}
+
+/** "Oct 19 – 25, 2026" for a week_start. */
+export function weekRangeLabel(weekStart: string): string {
+  const s = new Date(weekStart + "T00:00:00");
+  const e = new Date(s);
+  e.setDate(s.getDate() + 6);
+  const sameMonth = s.getMonth() === e.getMonth();
+  const start = s.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const end = e.toLocaleDateString(undefined, sameMonth ? { day: "numeric" } : { month: "short", day: "numeric" });
+  return `${start} – ${end}, ${e.getFullYear()}`;
+}
+
+/** "Mon, Oct 19" for a day within the week. */
+export function dayDateLabel(weekStart: string, day: Day): string {
+  const d = new Date(weekStart + "T00:00:00");
+  d.setDate(d.getDate() + DAYS.indexOf(day));
+  return `${day}, ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+}
 
 /** Monday of the upcoming week (today if today is Monday), as YYYY-MM-DD. */
 export function upcomingMonday(from = new Date()): string {

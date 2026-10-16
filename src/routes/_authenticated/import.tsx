@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { parseRecipePhotosWithAI, parseRecipesWithAI } from "@/lib/ai.functions";
-import { resizeImage } from "@/lib/image-resize";
+import { base64ToBlob, resizeImage } from "@/lib/image-resize";
+import { uploadRecipeImage } from "@/lib/recipe-images";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeFields, cleanDraft, type RecipeDraft } from "@/components/RecipeFields";
 
@@ -50,7 +52,7 @@ function ImportPage() {
     setPhotoErr(null);
     try {
       const out = await parsePhotos({ data: { images: photos.map(({ mediaType, data }) => ({ mediaType, data })) } });
-      setDrafts(out.map((r) => ({ ...r, can_repeat: false })));
+      setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
     } catch (e) {
       setPhotoErr(e instanceof Error ? e.message : "We couldn't read that photo. Please try another.");
     } finally {
@@ -62,13 +64,14 @@ function ImportPage() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [drafts, setDrafts] = useState<RecipeDraft[] | null>(null);
+  const [usePhoto, setUsePhoto] = useState(true);
 
   async function run() {
     setBusy(true);
     try {
       const out = await parse({ data: { text } });
       if (!out.length) toast.error("No recipes found in that text.");
-      else setDrafts(out.map((r) => ({ ...r, can_repeat: false })));
+      else setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "AI request failed");
     } finally {
@@ -78,7 +81,15 @@ function ImportPage() {
 
   async function saveAll() {
     if (!drafts) return;
-    const rows = drafts.map(cleanDraft).filter((r) => r.name);
+    const rows = drafts.map((d) => ({ ...cleanDraft(d), image_url: null as string | null })).filter((r) => r.name);
+    if (usePhoto && photos.length && rows.length) {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data.user) rows[0]!.image_url = await uploadRecipeImage(base64ToBlob(photos[0]!.data), data.user.id);
+      } catch {
+        toast.error("The photo couldn't be saved, but the recipes will be.");
+      }
+    }
     const { error } = await supabase.from("recipes").insert(rows);
     if (error) {
       toast.error("Couldn't save recipes.");
@@ -94,6 +105,12 @@ function ImportPage() {
       <main className="mx-auto max-w-3xl px-5 pt-6">
         <h1 className="font-display text-3xl">Review {drafts.length} recipe{drafts.length > 1 ? "s" : ""}</h1>
         <p className="mt-1 text-muted-foreground">Fix anything that looks off, then save.</p>
+        {photos.length > 0 && (
+          <label className="surface mt-4 flex min-h-12 items-center justify-between gap-3 px-4">
+            <span className="text-sm font-medium">Use this photo as the recipe picture</span>
+            <Switch checked={usePhoto} onCheckedChange={setUsePhoto} />
+          </label>
+        )}
         <div className="mt-6 space-y-4">
           {drafts.map((d, i) => (
             <div key={i} className="surface relative p-5">

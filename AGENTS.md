@@ -14,4 +14,8 @@
 - Hard plan rules are re-enforced in code after the model answers — the saved plan must always obey them.
 - Grocery list is computed in the browser from plan + recipes (`src/lib/plan.ts`) and cached in `grocery_lists` — deterministic, no AI cost.
 - Recipe photos are resized client-side (`src/lib/image-resize.ts`) and sent as base64 to `parseRecipePhotosWithAI` — keeps payloads small and the AI key server-side.
-- Plan drag-and-drop swaps go through `swapCells` in `src/lib/plan.ts` (same meal type, never locked cells) and save directly to `plans` — rule lives in one tested helper.
+- Plan drag-and-drop swaps go through `swapCells` in `src/lib/plan.ts` (any two cells, never locked cells) and save directly to `plans` — rule lives in one tested helper. `longDinnerOnBusyDay` in the same file decides the busy-day dinner warning toast.
+- Week labels come from `weekRangeLabel` / `dayDateLabel` / `shiftWeek` in `src/lib/plan.ts` — plan page, print page, history and PDFs all use them so dates stay consistent.
+- PDFs are built client-side with jsPDF in `src/lib/pdf.ts` (plan + grocery list); sharing goes through `src/components/ShareMenu.tsx` + `src/lib/share.ts` (native share sheet with the file, else Download/WhatsApp/Email fallbacks).
+- Recipe photos live in the private `recipe-images` storage bucket (public buckets are blocked on this platform); rows store the storage path in `recipes.image_url` and `src/lib/queries.ts` batch-signs paths into `imageSrc` for display. Uploads go through `src/lib/recipe-images.ts`.
+- Authenticated layout is a single top header in `src/routes/_authenticated/route.tsx` (nav links + user dropdown + mobile sheet); there is no bottom nav.

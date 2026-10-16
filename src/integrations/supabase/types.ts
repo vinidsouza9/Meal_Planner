@@ -135,6 +135,7 @@ export type Database = {
           cook_time: number
           created_at: string
           id: string
+          image_url: string | null
           ingredients: string[]
           is_quick: boolean
           meal_type: string
@@ -147,6 +148,7 @@ export type Database = {
           cook_time?: number
           created_at?: string
           id?: string
+          image_url?: string | null
           ingredients?: string[]
           is_quick?: boolean
           meal_type?: string
@@ -159,6 +161,7 @@ export type Database = {
           cook_time?: number
           created_at?: string
           id?: string
+          image_url?: string | null
           ingredients?: string[]
           is_quick?: boolean
           meal_type?: string
