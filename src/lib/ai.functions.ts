@@ -48,7 +48,7 @@ export const parseRecipesWithAI = createServerFn({ method: "POST" })
       },
       validator: z.object({ recipes: z.array(recipeOut) }),
     });
-    return out.recipes.map((r) => ({ ...r, is_quick: r.cook_time <= 20 ? r.is_quick || true : false }));
+    return out.recipes.map((r) => ({ ...r, is_quick: r.cook_time <= 20 }));
   });
 
 const cellSchema = {
