@@ -27,7 +27,7 @@ function Welcome() {
       toast.error("Couldn't save. Try again.");
       return;
     }
-    navigate({ to: "/recipes", search: {} });
+    navigate({ to: "/recipes", search: { recipe: undefined } });
   }
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">

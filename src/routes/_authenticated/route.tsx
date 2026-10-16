@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 const NAV = [
-  { to: "/recipes", search: {}, label: "Recipes", icon: BookOpen },
+  { to: "/recipes", search: { recipe: undefined }, label: "Recipes", icon: BookOpen },
   { to: "/checkin", label: "Plan my week", icon: Sparkles },
   { to: "/plan", label: "This week's plan", icon: CalendarDays },
   { to: "/history", label: "History", icon: History },
