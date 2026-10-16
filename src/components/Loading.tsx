@@ -49,7 +49,7 @@ type LoaderProps = {
 };
 
 /** Full-section loading state for slow actions (AI, PDFs). */
-export function CookingLoader({ task = "other", error, onRetry, onCancel, className }: LoaderProps) {
+export function CookingLoader({ task = "other", error, slow, onRetry, onCancel, className }: LoaderProps) {
   return (
     <div className={cn("surface flex flex-col items-center justify-center gap-4 px-6 py-12 text-center", className)} role="status" aria-live="polite">
       {error ? (
@@ -65,6 +65,7 @@ export function CookingLoader({ task = "other", error, onRetry, onCancel, classN
         <>
           <CookingPotAnimation />
           <p className="text-muted-foreground">{LOADING_MESSAGES[task]}</p>
+          {slow && <p className="text-sm text-muted-foreground">Taking a little longer than usual — hang tight, we're still working on it.</p>}
         </>
       )}
     </div>
