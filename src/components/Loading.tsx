@@ -41,6 +41,8 @@ type LoaderProps = {
   task?: LoadingTask;
   /** Friendly error text. When set, the animation is replaced by the message and a Try again button. */
   error?: string | null;
+  /** True when the request is taking longer than usual but is still running. */
+  slow?: boolean;
   onRetry?: () => void;
   onCancel?: () => void;
   className?: string;
