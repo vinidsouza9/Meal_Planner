@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Printer } from "lucide-react";
@@ -7,7 +8,7 @@ import { AISLES, buildGrocery, type GroceryItem } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/grocery-print")({
-  head: () => ({ meta: [{ title: "Print grocery list — Meal Planner" }] }),
+  head: () => pageMeta("Print grocery list", "Print your household grocery list."),
   component: GroceryPrint,
 });
 

@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { Loader2 } from "lucide-react";
 import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -29,7 +30,7 @@ import type { MealType, Recipe } from "@/lib/plan";
 import { allRecipesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/recipes")({
-  head: () => ({ meta: [{ title: "Recipes — Meal Planner" }] }),
+  head: () => pageMeta("Recipes", "Browse and manage your saved recipes and recipe pictures."),
   component: RecipesPage,
 });
 

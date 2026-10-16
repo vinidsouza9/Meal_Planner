@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronDown, Printer } from "lucide-react";
@@ -8,7 +9,7 @@ import { CardsSkeleton } from "@/components/Loading";
 import { allRecipesQuery, recentPlansQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/history")({
-  head: () => ({ meta: [{ title: "History — Meal Planner" }] }),
+  head: () => pageMeta("History", "Review your two most recent saved meal planning weeks."),
   component: HistoryPage,
 });
 

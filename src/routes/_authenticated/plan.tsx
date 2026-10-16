@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -28,27 +29,27 @@ import { DAYS, MEALS, cellKey, dayDateLabel, longDinnerOnBusyDay, shiftWeek, swa
 import { allRecipesQuery, latestPlanQuery, planForWeekQuery, type PlanRow } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/plan")({
-  head: () => ({ meta: [{ title: "This week — Meal Planner" }] }),
+  head: () => pageMeta("This week", "View and adjust your weekly meals."),
   component: PlanPage,
 });
 
 type CellInfo = { day: Day; meal: Meal; recipe: Recipe | undefined; leftover: boolean; locked: boolean; noCook: boolean; empty: boolean };
 
-function Tag({ children }: { children: React.ReactNode }) {
-  return <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{children}</span>;
+function Tag({ children, tone = "" }: { children: React.ReactNode; tone?: string }) {
+  return <span className={`inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground ${tone}`}>{children}</span>;
 }
 
 function MealCard({ info, dragging, overlay }: { info: CellInfo; dragging?: boolean; overlay?: boolean }) {
   if (info.empty) {
     return (
       <div className="flex min-h-24 w-full items-center justify-center rounded-2xl border border-dashed border-border p-3 text-sm text-muted-foreground/70">
-        {info.noCook ? "No cooking" : "—"}
+        {info.noCook ? <Tag>No cooking</Tag> : "—"}
       </div>
     );
   }
   return (
     <div
-      className={`relative flex min-h-24 w-full flex-col justify-between gap-2 rounded-2xl border bg-card p-3 text-left text-sm transition-all duration-200 ${
+      className={`relative flex min-h-24 w-full flex-col justify-between gap-2 rounded-2xl border meal-${info.meal} p-3 text-left text-sm transition-all duration-200 ${
         dragging ? "opacity-40" : ""
       } ${overlay ? "rotate-2 scale-105 shadow-xl" : "shadow-card"}`}
     >
@@ -61,12 +62,12 @@ function MealCard({ info, dragging, overlay }: { info: CellInfo; dragging?: bool
           </Tag>
         )}
         {info.recipe?.is_quick && !info.leftover && (
-          <Tag>
+          <Tag tone="tag-quick">
             <Zap className="size-3" />
             Quick
           </Tag>
         )}
-        {info.leftover && <Tag>Leftover</Tag>}
+        {info.leftover && <Tag tone="tag-leftover">Leftover</Tag>}
       </div>
       {info.locked && <Lock className="absolute right-2.5 top-2.5 size-3.5 text-primary" aria-label="Locked" />}
     </div>
@@ -140,7 +141,7 @@ function PlanPage() {
             {recipes.length ? "Answer a few quick questions and we'll plan the week." : "Add a few recipes first, then plan your week."}
           </p>
           <Button asChild size="lg" className="mt-6 w-full">
-            {recipes.length ? <Link to="/checkin"><Sparkles /> Start weekly check-in</Link> : <Link to="/import">Add recipes</Link>}
+            {recipes.length ? <Link to="/checkin"><Sparkles /> Plan my week</Link> : <Link to="/import">Add recipes</Link>}
           </Button>
         </div>
       </main>
@@ -252,7 +253,7 @@ function PlanPage() {
               emailSubject={`Meal plan: ${weekRangeLabel(plan.week_start)}`}
             />
             <Button asChild variant="outline" size="icon" aria-label="Print plan"><Link to="/print" search={{ week: plan.week_start }}><Printer /></Link></Button>
-            <Button asChild variant="secondary"><Link to="/checkin"><RefreshCw /> New plan</Link></Button>
+            <Button asChild variant="secondary"><Link to="/checkin"><RefreshCw /> Plan my week</Link></Button>
           </div>
         )}
       </div>
@@ -260,8 +261,8 @@ function PlanPage() {
       {!plan ? (
         <div className="surface mt-6 p-8 text-center">
           <p className="font-medium">No plan for this week</p>
-          <p className="mt-1 text-sm text-muted-foreground">Go back to a planned week, or start a new check-in.</p>
-          <Button asChild className="mt-5"><Link to="/checkin"><Sparkles /> Plan a week</Link></Button>
+          <p className="mt-1 text-sm text-muted-foreground">Go back to a planned week, or plan your week.</p>
+          <Button asChild className="mt-5"><Link to="/checkin"><Sparkles /> Plan my week</Link></Button>
         </div>
       ) : (
         <>
@@ -282,7 +283,7 @@ function PlanPage() {
                 ))}
                 {shownMeals.map((m) => (
                   <div key={m} className="contents">
-                    <div className="flex items-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{m}</div>
+                    <div className={`flex items-center text-xs font-semibold capitalize meal-label-${m}`}>{m}</div>
                     {shownDays.map((d) => (
                       <Slot key={d} info={info(d, m)} onOpen={() => setSel({ day: d, meal: m })} canDrag dragging={false} />
                     ))}
@@ -322,7 +323,7 @@ function PlanPage() {
               >
                 {shownMeals.map((m) => (
                   <div key={m}>
-                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{m}</p>
+                    <p className={`mb-1.5 text-xs font-semibold capitalize meal-label-${m}`}>{m}</p>
                     <Slot info={info(curMobile, m)} onOpen={() => setSel({ day: curMobile, meal: m })} canDrag dragging={false} />
                   </div>
                 ))}

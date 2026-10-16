@@ -20,7 +20,7 @@ function header(d: jsPDF, title: string, subtitle: string) {
   const W = d.internal.pageSize.getWidth();
   const mint = PASTELS[1]!;
   d.setFillColor(mint[0], mint[1], mint[2]);
-  d.roundedRect(32, 32, W - 64, 64, 14, 14, "F");
+  d.rect(32, 32, W - 64, 4, "F");
   d.setFont("times", "bold");
   d.setFontSize(22);
   d.setTextColor(...INK);
@@ -55,8 +55,9 @@ export function buildPlanPdf(plan: PlanJson, recipes: Recipe[], weekStart: strin
   shownDays.forEach((day, r) => {
     const y = top + r * rowH;
     const pastel = PASTELS[r % PASTELS.length]!;
-    d.setFillColor(pastel[0], pastel[1], pastel[2]);
-    d.roundedRect(32, y, W - 64, rowH - 8, 10, 10, "F");
+    d.setDrawColor(220, 220, 220);
+    d.setLineWidth(0.5);
+    d.line(32, y + rowH - 8, W - 32, y + rowH - 8);
 
     // Day + date
     d.setFont("helvetica", "bold");

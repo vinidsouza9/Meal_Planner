@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Coffee, Printer, Salad, UtensilsCrossed } from "lucide-react";
@@ -7,7 +8,7 @@ import { allRecipesQuery, latestPlanQuery, planForWeekQuery } from "@/lib/querie
 
 export const Route = createFileRoute("/_authenticated/print")({
   validateSearch: (s: Record<string, unknown>) => ({ week: typeof s["week"] === "string" ? (s["week"] as string) : undefined }),
-  head: () => ({ meta: [{ title: "Print plan — Meal Planner" }] }),
+  head: () => pageMeta("Print plan", "Print your weekly meal planner with dates."),
   component: PrintPage,
 });
 
@@ -33,7 +34,7 @@ function PrintPage() {
       </div>
 
       {/* Decorative header */}
-      <div className="rounded-3xl bg-pastel-mint px-6 py-5 print:rounded-2xl">
+      <div className="rounded-3xl border-t-4 border-secondary bg-card px-6 py-5 print:rounded-2xl">
         <h1 className="font-display text-3xl">Meal Planner</h1>
         {plan && <p className="mt-1 text-sm text-muted-foreground">Week of {weekRangeLabel(plan.week_start)}</p>}
       </div>
@@ -45,7 +46,7 @@ function PrintPage() {
           {shownDays.map((d, i) => {
             const row = plan.plan_json.days.find((x) => x.day === d);
             return (
-              <section key={d} className={`flex gap-4 rounded-2xl px-4 py-3 ${PASTEL[i % PASTEL.length]}`}>
+              <section key={d} className="flex gap-4 border-b px-4 py-3">
                 <div className="w-20 shrink-0">
                   <p className="text-sm font-bold">{d}</p>
                   <p className="text-xs text-muted-foreground">{dayDateLabel(plan.week_start, d).split(", ")[1]}</p>
@@ -56,7 +57,7 @@ function PrintPage() {
                     const Icon = MEAL_ICON[m];
                     return (
                       <div key={m} className="rounded-xl bg-card/70 px-3 py-2">
-                        <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        <p className={`inline-flex items-center gap-1 rounded px-1 text-[10px] font-semibold uppercase text-muted-foreground ${m === "breakfast" ? "bg-pastel-butter" : m === "lunch" ? "bg-pastel-mint" : "bg-pastel-peach"}`}>
                           <Icon className="size-3" aria-hidden /> {m}
                         </p>
                         <p className="mt-0.5 text-sm font-medium leading-snug">

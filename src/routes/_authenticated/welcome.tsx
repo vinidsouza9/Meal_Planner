@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { LoadingButton } from "@/components/Loading";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/welcome")({
-  head: () => ({ meta: [{ title: "Welcome — Meal Planner" }] }),
+  head: () => pageMeta("Welcome", "Set your household size to start planning meals."),
   component: Welcome,
 });
 

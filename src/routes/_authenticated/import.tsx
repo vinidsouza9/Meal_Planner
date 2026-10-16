@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeFields, cleanDraft, type RecipeDraft } from "@/components/RecipeFields";
 
 export const Route = createFileRoute("/_authenticated/import")({
-  head: () => ({ meta: [{ title: "Add recipes with AI — Meal Planner" }] }),
+  head: () => pageMeta("Add recipes with AI", "Import your recipes from text or photos."),
   component: ImportPage,
 });
 
