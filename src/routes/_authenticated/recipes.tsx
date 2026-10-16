@@ -1,3 +1,5 @@
+import { Loader2 } from "lucide-react";
+import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -213,7 +215,7 @@ function RecipesPage() {
         </div>
 
         {isLoading ? (
-          <p className="mt-8 text-muted-foreground">Loading…</p>
+          <RecipeCardsSkeleton />
         ) : recipes.length === 0 ? (
           <div className="surface mt-6 p-8 text-center">
             <p className="font-medium">No recipes yet</p>
@@ -307,7 +309,7 @@ function RecipesPage() {
               {editing && <RecipeFields value={editing.draft} onChange={(d) => setEditing({ ...editing, draft: d })} />}
             </div>
             <div className="border-t p-4">
-              <Button className="w-full" onClick={() => save.mutate()} disabled={save.isPending}>Save recipe</Button>
+              <LoadingButton className="w-full" onClick={() => save.mutate()} loading={save.isPending} loadingText="Saving...">Save recipe</LoadingButton>
             </div>
           </DialogContent>
         </Dialog>
@@ -322,12 +324,13 @@ function RecipesPage() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                disabled={del.isPending}
                 onClick={(e) => {
                   e.preventDefault();
                   if (deleting) del.mutate(deleting);
                 }}
               >
-                Delete
+                {del.isPending ? <><Loader2 className="animate-spin" aria-hidden="true" /> Deleting...</> : "Delete"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

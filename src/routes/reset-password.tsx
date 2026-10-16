@@ -1,3 +1,4 @@
+import { LoadingButton } from "@/components/Loading";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -78,7 +79,7 @@ function ResetPage() {
             <FieldError id="pw2-err">{errs.pw2}</FieldError>
           </div>
           {errs.form && <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{errs.form}</p>}
-          <Button type="submit" size="lg" className="w-full" disabled={busy || ready === null}>{busy ? "Saving…" : "Save new password"}</Button>
+          <LoadingButton type="submit" size="lg" className="w-full" disabled={ready === null} loading={busy} loadingText="Saving...">Save new password</LoadingButton>
         </form>
       )}
     </main>

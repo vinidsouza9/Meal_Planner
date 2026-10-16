@@ -1,3 +1,4 @@
+import { LoadingButton } from "@/components/Loading";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
@@ -40,9 +41,9 @@ function Welcome() {
           <Plus />
         </Button>
       </div>
-      <Button size="lg" className="mt-8 w-full" onClick={save} disabled={busy}>
+      <LoadingButton size="lg" className="mt-8 w-full" onClick={save} loading={busy} loadingText="Saving...">
         Continue
-      </Button>
+      </LoadingButton>
     </main>
   );
 }

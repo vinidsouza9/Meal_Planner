@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Camera, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
+import { Camera, ImagePlus, Sparkles, X } from "lucide-react";
+import { CookingLoader, LoadingButton, useSlowAction } from "@/components/Loading";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,38 +49,39 @@ function ImportPage() {
   }
 
   async function runPhotos() {
-    setBusy(true);
     setPhotoErr(null);
-    try {
+    await slow.run(async () => {
       const out = await parsePhotos({ data: { images: photos.map(({ mediaType, data }) => ({ mediaType, data })) } });
       setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
-    } catch (e) {
-      setPhotoErr(e instanceof Error ? e.message : "We couldn't read that photo. Please try another.");
-    } finally {
-      setBusy(false);
-    }
+    });
   }
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
+  const slow = useSlowAction();
+  const [saving, setSaving] = useState(false);
   const [drafts, setDrafts] = useState<RecipeDraft[] | null>(null);
   const [usePhoto, setUsePhoto] = useState(true);
 
   async function run() {
-    setBusy(true);
-    try {
+    await slow.run(async () => {
       const out = await parse({ data: { text } });
-      if (!out.length) toast.error("No recipes found in that text.");
-      else setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI request failed");
-    } finally {
-      setBusy(false);
-    }
+      if (!out.length) throw new Error("We couldn't find a recipe in that text. Try adding a dish name or ingredients.");
+      setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
+    });
   }
 
   async function saveAll() {
+    if (!drafts) return;
+    setSaving(true);
+    try {
+      await doSaveAll();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function doSaveAll() {
     if (!drafts) return;
     const rows = drafts.map((d) => ({ ...cleanDraft(d), image_url: null as string | null })).filter((r) => r.name);
     if (usePhoto && photos.length && rows.length) {
@@ -127,8 +129,16 @@ function ImportPage() {
         </div>
         <div className="sticky bottom-20 mt-6 flex gap-3 bg-background/90 py-3 backdrop-blur">
           <Button variant="outline" className="flex-1" onClick={() => setDrafts(null)}>Back</Button>
-          <Button className="flex-1" onClick={saveAll} disabled={!drafts.length}>Save all</Button>
+          <LoadingButton className="flex-1" onClick={saveAll} disabled={!drafts.length} loading={saving} loadingText="Saving...">Save all</LoadingButton>
         </div>
+      </main>
+    );
+  }
+
+  if (slow.active) {
+    return (
+      <main className="mx-auto max-w-3xl px-5 pt-10">
+        <CookingLoader task="recipe" error={slow.error} onRetry={slow.retry} onCancel={slow.reset} />
       </main>
     );
   }
@@ -152,9 +162,8 @@ function ImportPage() {
             placeholder={"Chicken stir fry\nLentil soup\nShakshuka"}
             className="mt-2 rounded-2xl bg-card text-base"
           />
-          <Button size="lg" className="mt-4 w-full" onClick={run} disabled={busy || text.trim().length < 2}>
-            {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            {busy ? "Reading your recipes…" : "Turn into recipes"}
+          <Button size="lg" className="mt-4 w-full" onClick={run} disabled={text.trim().length < 2}>
+            <Sparkles /> Turn into recipes
           </Button>
         </TabsContent>
         <TabsContent value="photo">
@@ -188,9 +197,8 @@ function ImportPage() {
             </ul>
           )}
           {photoErr && <p role="alert" className="mt-3 text-sm text-destructive">{photoErr}</p>}
-          <Button size="lg" variant="warm" className="mt-4 w-full" onClick={runPhotos} disabled={busy || photos.length === 0}>
-            {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            {busy ? "Reading your photo…" : "Read recipe from photo"}
+          <Button size="lg" variant="warm" className="mt-4 w-full" onClick={runPhotos} disabled={photos.length === 0}>
+            <Sparkles /> Read recipe from photo
           </Button>
         </TabsContent>
       </Tabs>
