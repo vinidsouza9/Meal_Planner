@@ -68,16 +68,18 @@ export function groceryText(items: GroceryItem[], title?: string): string {
 
 export const cellKey = (day: Day, meal: Meal) => `${day}-${meal}`;
 
-/** Today's meal and Monday in the user's local timezone. */
-export function currentCookingSlot(now = new Date()): { day: Day; meal: Meal; weekStart: string } {
+/** Weekday and mealtime in the user's local timezone. */
+export function currentCookingSlot(now = new Date()): { day: Day; meal: Meal } {
   const day = DAYS[(now.getDay() + 6) % 7] ?? "Mon";
   const hour = now.getHours();
-  const meal: Meal = hour < 11 ? "breakfast" : hour < 15 ? "lunch" : "dinner";
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const weekStart = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
-  return { day, meal, weekStart };
+  const meal: Meal = hour < 11 ? "breakfast" : hour < 16 ? "lunch" : "dinner";
+  return { day, meal };
+}
+
+/** Resolve the local weekday's meal from the calendar currently being viewed. */
+export function cookingRecipe(plan: PlanJson, recipes: Recipe[], slot: { day: Day; meal: Meal }): Recipe | undefined {
+  const cell = plan.days.find((day) => day.day === slot.day)?.[slot.meal];
+  return recipes.find((recipe) => recipe.id === cell?.recipe_id);
 }
 
 /** True when a recipe over 20 minutes lands in dinner on a busy day (allowed, but worth a warning). */
