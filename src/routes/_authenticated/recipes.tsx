@@ -263,8 +263,7 @@ function RecipesPage() {
             <DialogHeader className="border-b p-5 text-left">
               <DialogTitle className="font-display text-2xl">{shown?.name}</DialogTitle>
               <DialogDescription className="capitalize">
-                {shown?.cook_time} min · {shown?.meal_types.join(" · ")}
-                {shown?.is_quick ? " · quick" : ""}
+                {shown?.cook_time} min{shown?.is_quick ? " · quick" : ""}
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto overscroll-contain p-5">
