@@ -18,7 +18,8 @@ function doc() {
 
 function header(d: jsPDF, title: string, subtitle: string) {
   const W = d.internal.pageSize.getWidth();
-  d.setFillColor(...PASTELS[1]);
+  const mint = PASTELS[1]!;
+  d.setFillColor(mint[0], mint[1], mint[2]);
   d.roundedRect(32, 32, W - 64, 64, 14, 14, "F");
   d.setFont("times", "bold");
   d.setFontSize(22);
@@ -54,7 +55,7 @@ export function buildPlanPdf(plan: PlanJson, recipes: Recipe[], weekStart: strin
   shownDays.forEach((day, r) => {
     const y = top + r * rowH;
     const pastel = PASTELS[r % PASTELS.length]!;
-    d.setFillColor(...pastel);
+    d.setFillColor(pastel[0], pastel[1], pastel[2]);
     d.roundedRect(32, y, W - 64, rowH - 8, 10, 10, "F");
 
     // Day + date
@@ -128,7 +129,7 @@ export function buildGroceryPdf(items: GroceryItem[], weekStart: string, people:
       col = 1;
       y = colY[1]!;
     }
-    const x = colX[col]!;
+    const x = colX[col]! as number;
     d.setFont("helvetica", "bold");
     d.setFontSize(10);
     d.setTextColor(...GREEN);

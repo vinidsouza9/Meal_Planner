@@ -253,7 +253,7 @@ function PlanPage() {
               message={`Here's our meal plan for ${weekRangeLabel(plan.week_start)}.`}
               emailSubject={`Meal plan: ${weekRangeLabel(plan.week_start)}`}
             />
-            <Button asChild variant="outline" size="icon" aria-label="Print plan"><Link to="/print"><Printer /></Link></Button>
+            <Button asChild variant="outline" size="icon" aria-label="Print plan"><Link to="/print" search={{ week: plan.week_start }}><Printer /></Link></Button>
             <Button asChild variant="secondary"><Link to="/checkin"><RefreshCw /> New plan</Link></Button>
           </div>
         )}

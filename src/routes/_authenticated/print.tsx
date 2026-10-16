@@ -6,7 +6,7 @@ import { DAYS, MEALS, dayDateLabel, weekRangeLabel, type Meal } from "@/lib/plan
 import { allRecipesQuery, latestPlanQuery, planForWeekQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/print")({
-  validateSearch: (s: Record<string, unknown>) => ({ week: typeof s.week === "string" ? s.week : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ week: typeof s["week"] === "string" ? (s["week"] as string) : undefined }),
   head: () => ({ meta: [{ title: "Print plan — Meal Planner" }] }),
   component: PrintPage,
 });

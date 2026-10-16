@@ -44,9 +44,12 @@ export function swapCells(plan: PlanJson, locked: string[], a: { day: Day; meal:
   if (!ca || !cb) return null;
   // A moved meal is freshly cooked where it lands, so the leftover flag is dropped.
   return {
-    days: plan.days.map((d) =>
-      d.day === a.day ? { ...d, [a.meal]: { recipe_id: cb.recipe_id, leftover: false } } : d.day === b.day ? { ...d, [b.meal]: { recipe_id: ca.recipe_id, leftover: false } } : d,
-    ),
+    days: plan.days.map((d) => {
+      let out = d;
+      if (d.day === a.day) out = { ...out, [a.meal]: { recipe_id: cb.recipe_id, leftover: false } };
+      if (d.day === b.day) out = { ...out, [b.meal]: { recipe_id: ca.recipe_id, leftover: false } };
+      return out;
+    }),
   };
 }
 
