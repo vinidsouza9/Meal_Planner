@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy, MessageCircle, Printer, RefreshCw, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { AISLES, buildGrocery, type GroceryItem } from "@/lib/plan";
+import { AISLES, buildGrocery, groceryText, type GroceryItem } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/grocery")({
@@ -57,13 +57,22 @@ function GroceryPage() {
 
   function copy() {
     if (!items) return;
-    const text = AISLES.map((a) => {
-      const rows = items.filter((i) => i.aisle === a && !i.checked);
-      return rows.length ? `${a}\n${rows.map((r) => `- ${r.name} (${r.qty})`).join("\n")}` : "";
-    })
-      .filter(Boolean)
-      .join("\n\n");
-    navigator.clipboard.writeText(text).then(() => toast.success("Copied to clipboard"));
+    navigator.clipboard.writeText(groceryText(items)).then(() => toast.success("Copied to clipboard"));
+  }
+
+  async function share() {
+    if (!items || !plan) return;
+    const text = groceryText(items, `Grocery list — week of ${plan.week_start}`);
+    const mobile = typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches;
+    if (mobile) {
+      try {
+        await navigator.share({ title: "Grocery list", text });
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+      }
+    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   }
 
   if (isLoading) return <main className="mx-auto max-w-xl px-5 pt-6 text-muted-foreground">Loading…</main>;
@@ -80,15 +89,18 @@ function GroceryPage() {
 
   return (
     <main className="mx-auto max-w-xl px-5 pt-6">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl">Groceries</h1>
-          <p className="text-sm text-muted-foreground">For {people} {people === 1 ? "person" : "people"} · fridge items left off</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => rebuild()} aria-label="Rebuild list"><RefreshCw /></Button>
-          <Button onClick={copy}><Copy /> Copy</Button>
-        </div>
+      <div>
+        <h1 className="font-display text-3xl">Groceries</h1>
+        <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-soft px-3 py-1 text-sm font-medium text-amber-foreground">
+          <Users className="size-4" /> Quantities for {people} {people === 1 ? "person" : "people"}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Fridge items are left off.</p>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button variant="warm" onClick={share} disabled={!items?.length}><MessageCircle /> Share on WhatsApp</Button>
+        <Button variant="secondary" onClick={copy} disabled={!items?.length}><Copy /> Copy</Button>
+        <Button asChild variant="outline"><Link to="/grocery-print"><Printer /> Print</Link></Button>
+        <Button variant="outline" size="icon" onClick={() => rebuild()} aria-label="Rebuild list"><RefreshCw /></Button>
       </div>
       {!items ? (
         <p className="mt-8 text-muted-foreground">Building list…</p>
