@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Loader2, Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
+import { CookingLoader, useSlowAction } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -37,7 +38,7 @@ function CheckIn() {
     queryFn: async () => (await supabase.from("profiles").select("household_size").maybeSingle()).data,
   });
   const [step, setStep] = useState(0);
-  const [busy, setBusy] = useState(false);
+  const slow = useSlowAction();
   const [newItem, setNewItem] = useState("");
   const [a, setA] = useState<CheckInAnswers>({
     meals: ["dinner"],
@@ -153,16 +154,20 @@ function CheckIn() {
       toast.error("Pick at least one meal.");
       return;
     }
-    setBusy(true);
-    try {
-      const answers = { ...a, busyDays: a.busyDays.filter((d) => days.includes(d)), noCookDays: a.noCookDays.filter((d) => days.includes(d)) };
+    const answers = { ...a, busyDays: a.busyDays.filter((d) => days.includes(d)), noCookDays: a.noCookDays.filter((d) => days.includes(d)) };
+    await slow.run(async () => {
       await gen({ data: { weekStart: upcomingMonday(), answers } });
       await qc.invalidateQueries({ queryKey: ["plan"] });
       navigate({ to: "/plan" });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't plan the week");
-      setBusy(false);
-    }
+    });
+  }
+
+  if (slow.active) {
+    return (
+      <main className="mx-auto max-w-xl px-5 pt-10">
+        <CookingLoader task="plan" error={slow.error} onRetry={slow.retry} onCancel={slow.reset} />
+      </main>
+    );
   }
 
   return (
@@ -181,8 +186,8 @@ function CheckIn() {
       <h1 className="mt-8 font-display text-3xl">{s.title}</h1>
       {"hint" in s && s.hint && <p className="mt-2 text-muted-foreground">{s.hint}</p>}
       <div className="mt-8">{s.body}</div>
-      <Button size="lg" className="mt-10 w-full" onClick={() => (last ? finish() : setStep(step + 1))} disabled={busy}>
-        {busy ? <><Loader2 className="animate-spin" /> Planning your week…</> : last ? <><Sparkles /> Plan my week</> : "Next"}
+      <Button size="lg" className="mt-10 w-full" onClick={() => (last ? finish() : setStep(step + 1))} >
+        {last ? <><Sparkles /> Plan my week</> : "Next"}
       </Button>
     </main>
   );
