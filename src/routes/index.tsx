@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 
 const STEPS = [
   { icon: BookOpen, t: "Add your recipes", d: "Type them, paste them or snap a photo of a cookbook page.", tone: "bg-lunch-soft text-lunch" },
-  { icon: ClipboardCheck, t: "Answer a quick check-in", d: "Which nights are busy, who's eating, what's in the fridge.", tone: "bg-breakfast-soft text-breakfast" },
+  { icon: ClipboardCheck, t: "Plan my week", d: "Which nights are busy, who's eating, what's in the fridge.", tone: "bg-breakfast-soft text-breakfast" },
   { icon: CalendarDays, t: "Get your plan", d: "A week of meals that fits your nights. Drag to rearrange.", tone: "bg-dinner-soft text-dinner" },
   { icon: ShoppingBasket, t: "Get your grocery list", d: "Grouped by aisle and sized for your household.", tone: "bg-secondary text-primary" },
 ];

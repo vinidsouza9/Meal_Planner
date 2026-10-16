@@ -165,3 +165,14 @@
 .cook-steam-2 { animation-delay: 0.5s; }
 .cook-steam-3 { animation-delay: 1s; }
 @media (prefers-reduced-motion: reduce) { .cook-lid, .cook-steam { animation: none; } }
+
+/* Subtle planner meal colors and themed photo-editor frame. */
+.meal-breakfast { background-color: var(--pastel-butter); }
+.meal-lunch { background-color: var(--pastel-mint); }
+.meal-dinner { background-color: var(--pastel-peach); }
+.meal-label-breakfast { color: var(--amber-foreground); }
+.meal-label-lunch { color: var(--secondary-foreground); }
+.meal-label-dinner { color: var(--dinner); }
+.tag-quick { background-color: var(--amber-soft); color: var(--amber-foreground); }
+.tag-leftover { background-color: var(--pastel-mint); border-style: dashed; }
+.photo-crop .reactEasyCrop_CropArea { color: var(--primary-foreground); border-color: var(--primary-foreground); }

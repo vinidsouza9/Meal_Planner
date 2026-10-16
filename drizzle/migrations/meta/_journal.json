@@ -29,6 +29,27 @@
       "when": 1792179276416,
       "tag": "0003_recipe_images_private_read",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792184936166,
+      "tag": "0004_meal_types_profile_photo_originals",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792184996452,
+      "tag": "0005_one_plan_per_week",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792185179644,
+      "tag": "0006_clarify_week_save_variable",
+      "breakpoints": true
     }
   ]
 }

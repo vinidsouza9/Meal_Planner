@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { Loader2 } from "lucide-react";
 import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -24,12 +25,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { RecipeFields, cleanDraft, emptyDraft, type RecipeDraft } from "@/components/RecipeFields";
-import { removeRecipeImage, uploadRecipeImage } from "@/lib/recipe-images";
+import { removeRecipeImage, prepareRecipePhoto } from "@/lib/recipe-images";
 import type { MealType, Recipe } from "@/lib/plan";
 import { allRecipesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/recipes")({
-  head: () => ({ meta: [{ title: "Recipes — Meal Planner" }] }),
+  head: () => pageMeta("Recipes", "Browse and manage your saved recipes and recipe pictures."),
   component: RecipesPage,
 });
 
@@ -49,7 +50,9 @@ const toDraft = (r: Recipe): RecipeDraft => ({
   cook_time: r.cook_time,
   is_quick: r.is_quick,
   can_repeat: r.can_repeat,
-  meal_type: r.meal_type ?? "any",
+  meal_types: r.meal_types,
+  original_image_url: r.original_image_url ?? null,
+  image_crop: r.image_crop ?? null,
   image_url: r.image_url ?? null,
   photoPreview: r.imageSrc ?? null,
 });
@@ -57,28 +60,12 @@ const toDraft = (r: Recipe): RecipeDraft => ({
 function RecipeImage({ src, name }: { src?: string | null; name: string }) {
   if (!src) {
     return (
-      <div className="grid aspect-[2/1] w-full place-items-center rounded-t-2xl bg-muted text-muted-foreground/60">
+      <div className="grid aspect-[4/3] w-full place-items-center rounded-t-2xl bg-muted text-muted-foreground/60">
         <UtensilsCrossed className="size-8" aria-hidden />
       </div>
     );
   }
-  return <img src={src} alt={name} className="aspect-[2/1] w-full rounded-t-2xl object-cover" />;
-}
-
-/** Upload/remove the photo for a draft and return the image_url to save. */
-async function resolveImage(draft: RecipeDraft, previousPath: string | null): Promise<string | null> {
-  if (draft.photoBlob) {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) throw new Error("Not signed in");
-    const path = await uploadRecipeImage(draft.photoBlob, data.user.id);
-    if (previousPath && previousPath !== path) await removeRecipeImage(previousPath);
-    return path;
-  }
-  if (draft.removePhoto && previousPath) {
-    await removeRecipeImage(previousPath);
-    return null;
-  }
-  return previousPath;
+  return <img src={src} alt={name} className="aspect-[4/3] w-full rounded-t-2xl object-cover" />;
 }
 
 function RecipesPage() {
@@ -97,7 +84,7 @@ function RecipesPage() {
     const s = q.toLowerCase().trim();
     const out = recipes.filter((r) => {
       if (s && !r.name.toLowerCase().includes(s) && !r.ingredients.some((i) => i.toLowerCase().includes(s))) return false;
-      if (type !== "all" && r.meal_type !== type && r.meal_type !== "any") return false;
+      if (type !== "all" && !r.meal_types.includes(type)) return false;
       if (time === "quick" && r.cook_time > 20) return false;
       if (time === "mid" && (r.cook_time <= 20 || r.cook_time > 40)) return false;
       if (time === "long" && r.cook_time <= 40) return false;
@@ -121,12 +108,13 @@ function RecipesPage() {
       if (!editing) return;
       const row = cleanDraft(editing.draft);
       if (!row.name) throw new Error("Give the recipe a name");
-      const prevPath = editing.id ? (recipes.find((r) => r.id === editing.id)?.image_url ?? null) : null;
-      const image_url = await resolveImage(editing.draft, prevPath);
+      const previous = recipes.find((r) => r.id === editing.id) ?? {};
+      const photo = await prepareRecipePhoto(editing.draft, previous);
       const { error } = editing.id
-        ? await supabase.from("recipes").update({ ...row, image_url }).eq("id", editing.id)
-        : await supabase.from("recipes").insert({ ...row, image_url });
-      if (error) throw error;
+        ? await supabase.from("recipes").update({ ...row, ...photo.row }).eq("id", editing.id)
+        : await supabase.from("recipes").insert({ ...row, ...photo.row });
+      if (error) { await photo.rollback(); throw error; }
+      await photo.commit();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["recipes"] });
@@ -140,7 +128,7 @@ function RecipesPage() {
     mutationFn: async (r: Recipe) => {
       const { error } = await supabase.from("recipes").delete().eq("id", r.id);
       if (error) throw error;
-      if (r.image_url) await removeRecipeImage(r.image_url);
+      await Promise.all([...new Set([r.image_url, r.original_image_url])].filter((p): p is string => !!p).map(removeRecipeImage));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["recipes"] });
@@ -236,7 +224,7 @@ function RecipesPage() {
                     <p className="pr-2 font-semibold">{r.name}</p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
                       <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Clock className="size-3" />{r.cook_time} min</span>
-                      <span className="rounded-full border px-2.5 py-1 capitalize text-muted-foreground">{r.meal_type === "any" ? "Any meal" : r.meal_type}</span>
+                      {r.meal_types.map((m) => <span key={m} className="rounded-full border px-2.5 py-1 capitalize text-muted-foreground">{m}</span>)}
                       {r.is_quick && <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Zap className="size-3" />Quick</span>}
                       {r.can_repeat && <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Repeat className="size-3" />Weekly</span>}
                     </div>
@@ -266,12 +254,12 @@ function RecipesPage() {
             <DialogHeader className="border-b p-5 text-left">
               <DialogTitle className="font-display text-2xl">{viewing?.name}</DialogTitle>
               <DialogDescription className="capitalize">
-                {viewing?.cook_time} min · {viewing?.meal_type === "any" ? "any meal" : viewing?.meal_type}
+                {viewing?.cook_time} min · {viewing?.meal_types.join(" · ")}
                 {viewing?.is_quick ? " · quick" : ""}
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto overscroll-contain p-5">
-              {viewing?.imageSrc && <img src={viewing.imageSrc} alt={viewing.name} className="mb-4 aspect-video w-full rounded-xl object-cover" />}
+              {viewing?.imageSrc && <img src={viewing.imageSrc} alt={viewing.name} className="mb-4 aspect-[4/3] w-full rounded-xl object-cover" />}
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
                 <ul className="mt-2 list-disc space-y-1 pl-5">

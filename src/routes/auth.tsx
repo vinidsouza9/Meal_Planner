@@ -42,11 +42,13 @@ function AuthPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [mode, setMode] = useState<"in" | "up">(search.mode === "signup" ? "up" : "in");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
-  const [errs, setErrs] = useState<{ email?: string; password?: string; confirm?: string; form?: string }>({});
+  const [errs, setErrs] = useState<{ firstName?: string; lastName?: string; email?: string; password?: string; confirm?: string; form?: string }>({});
   const [sentTo, setSentTo] = useState<string | null>(null);
 
   function switchMode(m: "in" | "up") {
@@ -60,6 +62,8 @@ function AuthPage() {
     const next: typeof errs = {};
     if (!emailZ.safeParse(email).success) next.email = "Enter a valid email address, like you@example.com.";
     if (mode === "up") {
+      if (!firstName.trim()) next.firstName = "Enter your first name.";
+      if (!lastName.trim()) next.lastName = "Enter your last name.";
       if (password.length < 8) next.password = "Password must be at least 8 characters.";
       if (confirm !== password) next.confirm = "Passwords don't match.";
     } else if (!password) next.password = "Enter your password.";
@@ -72,7 +76,7 @@ function AuthPage() {
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: `${window.location.origin}/plan` },
+          options: { emailRedirectTo: `${window.location.origin}/plan`, data: { first_name: firstName.trim(), last_name: lastName.trim() } },
         });
         if (error) throw error;
         if (!data.session) {
@@ -120,6 +124,10 @@ function AuthPage() {
         </p>
       )}
       <form onSubmit={submit} noValidate className="surface mt-6 space-y-4 p-6">
+        {mode === "up" && <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2"><Label htmlFor="first-name">First name</Label><Input id="first-name" placeholder="First name" autoComplete="given-name" required maxLength={100} value={firstName} onChange={(e) => setFirstName(e.target.value)} aria-invalid={!!errs.firstName} aria-describedby="first-name-error" /><FieldError id="first-name-error">{errs.firstName}</FieldError></div>
+          <div className="space-y-2"><Label htmlFor="last-name">Last name</Label><Input id="last-name" placeholder="Last name" autoComplete="family-name" required maxLength={100} value={lastName} onChange={(e) => setLastName(e.target.value)} aria-invalid={!!errs.lastName} aria-describedby="last-name-error" /><FieldError id="last-name-error">{errs.lastName}</FieldError></div>
+        </div>}
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input

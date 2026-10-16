@@ -1,6 +1,9 @@
 import { createFileRoute, Link, Outlet, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BookOpen, CalendarDays, History, LogOut, Menu, Sparkles, ShoppingBasket, UserRound } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { profileQuery } from "@/lib/profile";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -20,31 +23,31 @@ export const Route = createFileRoute("/_authenticated")({
 
 const NAV = [
   { to: "/recipes", label: "Recipes", icon: BookOpen },
-  { to: "/checkin", label: "Check-in", icon: Sparkles },
+  { to: "/checkin", label: "Plan my week", icon: Sparkles },
   { to: "/plan", label: "This week's plan", icon: CalendarDays },
   { to: "/history", label: "History", icon: History },
   { to: "/grocery", label: "Groceries", icon: ShoppingBasket },
 ] as const;
 
-function UserMenu({ email }: { email: string }) {
+function UserMenu({ email, firstName, avatar }: { email: string; firstName: string; avatar?: string | null }) {
   const navigate = useNavigate();
-  const initial = (email[0] ?? "?").toUpperCase();
+  const initial = (firstName[0] || email[0] || "?").toUpperCase();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
+        <Button variant="ghost"
           className="flex items-center gap-2 rounded-full border bg-card py-1 pl-1 pr-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           aria-label="Account menu"
         >
-          <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{initial}</span>
-          <span className="hidden max-w-40 truncate text-sm font-medium sm:inline">{email}</span>
-        </button>
+          {avatar ? <img src={avatar} alt="Profile photo" className="size-8 rounded-full object-cover" /> : <span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{initial}</span>}
+          <span className="hidden max-w-40 truncate text-sm font-medium sm:inline">{firstName || initial}</span>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{email}</DropdownMenuLabel>
+        <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{firstName || initial}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/welcome"><UserRound /> Account</Link>
+          <Link to="/account"><UserRound /> Account</Link>
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {
@@ -62,12 +65,9 @@ function UserMenu({ email }: { email: string }) {
 function Layout() {
   const { pathname } = useLocation();
   const bare = pathname === "/welcome" || pathname === "/print" || pathname === "/grocery-print";
-  const [email, setEmail] = useState("");
+  const { data: profile } = useQuery(profileQuery);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
-  }, []);
 
   const isOn = (to: string) => pathname.startsWith(to);
 
@@ -94,7 +94,7 @@ function Layout() {
             </nav>
 
             <div className="flex items-center gap-2">
-              <UserMenu email={email} />
+              <UserMenu email={profile?.email ?? ""} firstName={profile?.first_name ?? ""} avatar={profile?.avatarSrc ?? null} />
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
                   <button className="grid size-11 place-items-center rounded-xl text-foreground hover:bg-muted md:hidden" aria-label="Open menu">
@@ -127,6 +127,7 @@ function Layout() {
           </div>
         </header>
       )}
+      {!bare && profile && (!profile.first_name || !profile.last_name) && <div className="mx-auto max-w-6xl px-5 py-3 text-sm"><Link to="/account" className="text-primary underline">Add your name to personalize your account.</Link></div>}
       <Outlet />
     </div>
   );

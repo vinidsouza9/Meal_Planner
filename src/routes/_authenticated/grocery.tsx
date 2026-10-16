@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -13,7 +14,7 @@ import { AISLES, buildGrocery, groceryText, weekRangeLabel, type GroceryItem } f
 import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/grocery")({
-  head: () => ({ meta: [{ title: "Grocery list — Meal Planner" }] }),
+  head: () => pageMeta("Grocery list", "Shop your household grocery list grouped by aisle."),
   component: GroceryPage,
 });
 

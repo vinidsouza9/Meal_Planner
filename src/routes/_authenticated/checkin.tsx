@@ -1,19 +1,19 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Plus, Sparkles, X } from "lucide-react";
+import { Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { CookingLoader, useSlowAction } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
+import { profileQuery } from "@/lib/profile";
 import { generatePlan } from "@/lib/ai.functions";
-import { DAYS, MEALS, upcomingMonday, type CheckInAnswers, type Day } from "@/lib/plan";
+import { DAYS, MEALS, upcomingMonday, weekRangeLabel, type CheckInAnswers, type Day } from "@/lib/plan";
 
 export const Route = createFileRoute("/_authenticated/checkin")({
-  head: () => ({ meta: [{ title: "Weekly check-in — Meal Planner" }] }),
+  head: () => pageMeta("Plan my week", "Answer questions about your week to generate a household meal plan."),
   component: CheckIn,
 });
 
@@ -21,9 +21,9 @@ const FRIDGE_SUGGESTIONS = ["Eggs", "Milk", "Chicken", "Spinach", "Tomatoes", "O
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" data-on={on} onClick={onClick} className="chip">
+    <Button variant={on ? "default" : "outline"} type="button" data-on={on} aria-pressed={on} onClick={onClick} className="min-h-11 rounded-full border px-4">
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -33,11 +33,8 @@ function CheckIn() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const gen = useServerFn(generatePlan);
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: async () => (await supabase.from("profiles").select("household_size").maybeSingle()).data,
-  });
-  const [step, setStep] = useState(0);
+  const { data: profile } = useQuery(profileQuery);
+
   const slow = useSlowAction();
   const [newItem, setNewItem] = useState("");
   const [a, setA] = useState<CheckInAnswers>({
@@ -146,8 +143,7 @@ function CheckIn() {
       ),
     },
   ];
-  const last = step === steps.length - 1;
-  const s = steps[step]!;
+  const week = upcomingMonday();
 
   async function finish() {
     if (!a.meals.length) {
@@ -156,8 +152,8 @@ function CheckIn() {
     }
     const answers = { ...a, busyDays: a.busyDays.filter((d) => days.includes(d)), noCookDays: a.noCookDays.filter((d) => days.includes(d)) };
     await slow.run(async () => {
-      await gen({ data: { weekStart: upcomingMonday(), answers } });
-      await qc.invalidateQueries({ queryKey: ["plan"] });
+      await gen({ data: { weekStart: week, answers } });
+      await Promise.all([qc.invalidateQueries({ queryKey: ["plan"] }), qc.invalidateQueries({ queryKey: ["plans"] }), qc.invalidateQueries({ queryKey: ["grocery"] })]);
       navigate({ to: "/plan" });
     });
   }
@@ -171,24 +167,12 @@ function CheckIn() {
   }
 
   return (
-    <main className="mx-auto max-w-xl px-5 pt-6">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => (step ? setStep(step - 1) : navigate({ to: "/plan" }))}
-          className="grid size-11 place-items-center rounded-xl hover:bg-muted"
-          aria-label="Back"
-        >
-          <ChevronLeft className="size-5" />
-        </button>
-        <Progress value={((step + 1) / steps.length) * 100} className="h-2 flex-1" />
-        <span className="w-10 text-right text-sm text-muted-foreground">{step + 1}/{steps.length}</span>
-      </div>
-      <h1 className="mt-8 font-display text-3xl">{s.title}</h1>
-      {"hint" in s && s.hint && <p className="mt-2 text-muted-foreground">{s.hint}</p>}
-      <div className="mt-8">{s.body}</div>
-      <Button size="lg" className="mt-10 w-full" onClick={() => (last ? finish() : setStep(step + 1))} >
-        {last ? <><Sparkles /> Plan my week</> : "Next"}
-      </Button>
+    <main className="mx-auto max-w-2xl px-5 pb-8 pt-6">
+      <h1 className="font-display text-3xl">Plan my week</h1>
+      <p className="mt-2 text-muted-foreground">Answer a few questions about your week and we'll build your meal plan.</p>
+      <p className="mt-4 font-medium text-primary">Planning for {weekRangeLabel(week)}</p>
+      <div className="mt-6 divide-y">{steps.map((section) => <section key={section.title} className="space-y-4 py-6"><h2 className="text-lg font-semibold">{section.title}</h2>{"hint" in section && section.hint && <p className="text-sm text-muted-foreground">{section.hint}</p>}{section.body}</section>)}</div>
+      <div className="sticky bottom-0 border-t bg-background/95 py-4 backdrop-blur sm:static"><Button size="lg" className="w-full" onClick={finish} disabled={!a.meals.length}><Sparkles />Generate my plan</Button></div>
     </main>
   );
 }

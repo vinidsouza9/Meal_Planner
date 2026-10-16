@@ -1,3 +1,5 @@
+import { readablePhoto } from "@/lib/photo-crop";
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
@@ -9,22 +11,22 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { parseRecipePhotosWithAI, parseRecipesWithAI } from "@/lib/ai.functions";
-import { base64ToBlob, resizeImage } from "@/lib/image-resize";
-import { uploadRecipeImage } from "@/lib/recipe-images";
+import { resizeImage } from "@/lib/image-resize";
+import { prepareRecipePhoto } from "@/lib/recipe-images";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecipeFields, cleanDraft, type RecipeDraft } from "@/components/RecipeFields";
 
 export const Route = createFileRoute("/_authenticated/import")({
-  head: () => ({ meta: [{ title: "Add recipes with AI — Meal Planner" }] }),
+  head: () => pageMeta("Add recipes with AI", "Import your recipes from text or photos."),
   component: ImportPage,
 });
 
 function ImportPage() {
   const parse = useServerFn(parseRecipesWithAI);
   const parsePhotos = useServerFn(parseRecipePhotosWithAI);
-  const [photos, setPhotos] = useState<{ mediaType: "image/jpeg"; data: string; preview: string }[]>([]);
+  const [photos, setPhotos] = useState<{ mediaType: "image/jpeg"; data: string; preview: string; original: Blob }[]>([]);
   const [photoErr, setPhotoErr] = useState<string | null>(null);
 
   async function addFiles(files: FileList | null) {
@@ -40,7 +42,8 @@ function ImportPage() {
         continue;
       }
       try {
-        out.push(await resizeImage(f));
+        const original = await readablePhoto(f);
+        out.push({ ...await resizeImage(original), original });
       } catch {
         setPhotoErr(/heic|heif/i.test(f.type + f.name) ? "This device can't open HEIC photos. Try a JPG or PNG instead." : "We couldn't open that photo.");
       }
@@ -52,7 +55,7 @@ function ImportPage() {
     setPhotoErr(null);
     await slow.run(async () => {
       const out = await parsePhotos({ data: { images: photos.map(({ mediaType, data }) => ({ mediaType, data })) } });
-      setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
+      setDrafts(out.map((r, i) => ({ ...r, can_repeat: false, image_url: null, ...(i === 0 && usePhoto && photos[0] ? { originalBlob: photos[0].original, photoPreview: photos[0].preview } : {}) })));
     });
   }
   const navigate = useNavigate();
@@ -73,6 +76,7 @@ function ImportPage() {
 
   async function saveAll() {
     if (!drafts) return;
+    if (drafts.some((d) => d.originalBlob && !d.photoBlob)) { toast.error("Adjust the recipe picture before saving."); return; }
     setSaving(true);
     try {
       await doSaveAll();
@@ -83,20 +87,21 @@ function ImportPage() {
 
   async function doSaveAll() {
     if (!drafts) return;
-    const rows = drafts.map((d) => ({ ...cleanDraft(d), image_url: null as string | null })).filter((r) => r.name);
-    if (usePhoto && photos.length && rows.length) {
-      try {
-        const { data } = await supabase.auth.getUser();
-        if (data.user) rows[0]!.image_url = await uploadRecipeImage(base64ToBlob(photos[0]!.data), data.user.id);
-      } catch {
-        toast.error("The photo couldn't be saved, but the recipes will be.");
+    const staged = [];
+    try {
+      for (const draft of drafts) {
+        if (!draft.name.trim()) continue;
+        const photo = await prepareRecipePhoto(draft, {});
+        staged.push({ row: { ...cleanDraft(draft), ...photo.row }, photo });
       }
-    }
-    const { error } = await supabase.from("recipes").insert(rows);
-    if (error) {
-      toast.error("Couldn't save recipes.");
+      const { error } = await supabase.from("recipes").insert(staged.map((x) => x.row));
+      if (error) throw error;
+    } catch (e) {
+      await Promise.all(staged.map((x) => x.photo.rollback()));
+      toast.error(e instanceof Error ? e.message : "Couldn't save recipes.");
       return;
     }
+    const rows = staged.map((x) => x.row);
     qc.invalidateQueries({ queryKey: ["recipes"] });
     toast.success(`Saved ${rows.length} recipe${rows.length > 1 ? "s" : ""}`);
     navigate({ to: "/recipes" });
@@ -110,7 +115,7 @@ function ImportPage() {
         {photos.length > 0 && (
           <label className="surface mt-4 flex min-h-12 items-center justify-between gap-3 px-4">
             <span className="text-sm font-medium">Use this photo as the recipe picture</span>
-            <Switch checked={usePhoto} onCheckedChange={setUsePhoto} />
+            <Switch checked={usePhoto} onCheckedChange={(checked) => { setUsePhoto(checked); setDrafts(drafts.map((d, i) => i === 0 ? { ...d, originalBlob: checked && photos[0] ? photos[0].original : null, photoBlob: null, photoPreview: checked ? photos[0]?.preview ?? null : null } : d)); }} />
           </label>
         )}
         <div className="mt-6 space-y-4">
