@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Copy, MessageCircle, Printer, RefreshCw, Users } from "lucide-react";
+import { Copy, Printer, RefreshCw, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ShareMenu } from "@/components/ShareMenu";
 import { supabase } from "@/integrations/supabase/client";
-import { AISLES, buildGrocery, groceryText, type GroceryItem } from "@/lib/plan";
+import { buildGroceryPdf } from "@/lib/pdf";
+import { AISLES, buildGrocery, groceryText, weekRangeLabel, type GroceryItem } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/grocery")({
@@ -60,20 +62,6 @@ function GroceryPage() {
     navigator.clipboard.writeText(groceryText(items)).then(() => toast.success("Copied to clipboard"));
   }
 
-  async function share() {
-    if (!items || !plan) return;
-    const text = groceryText(items, `Grocery list — week of ${plan.week_start}`);
-    const mobile = typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches;
-    if (mobile) {
-      try {
-        await navigator.share({ title: "Grocery list", text });
-        return;
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-      }
-    }
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
-  }
 
   if (isLoading) return <main className="mx-auto max-w-xl px-5 pt-6 text-muted-foreground">Loading…</main>;
   if (!plan)
@@ -97,7 +85,13 @@ function GroceryPage() {
         <p className="mt-1 text-sm text-muted-foreground">Fridge items are left off.</p>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button variant="warm" onClick={share} disabled={!items?.length}><MessageCircle /> Share on WhatsApp</Button>
+        <ShareMenu
+          build={() => buildGroceryPdf(items ?? [], plan.week_start, people)}
+          title="Grocery list"
+          message={`Here's the grocery list for ${weekRangeLabel(plan.week_start)}.`}
+          emailSubject={`Grocery list: ${weekRangeLabel(plan.week_start)}`}
+          disabled={!items?.length}
+        />
         <Button variant="secondary" onClick={copy} disabled={!items?.length}><Copy /> Copy</Button>
         <Button asChild variant="outline"><Link to="/grocery-print"><Printer /> Print</Link></Button>
         <Button variant="outline" size="icon" onClick={() => rebuild()} aria-label="Rebuild list"><RefreshCw /></Button>
