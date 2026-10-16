@@ -1,0 +1,109 @@
+// Shared, browser-safe types and helpers for plans and grocery lists.
+export const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+export type Day = (typeof DAYS)[number];
+export const MEALS = ["breakfast", "lunch", "dinner"] as const;
+export type Meal = (typeof MEALS)[number];
+
+export type Cell = { recipe_id: string; leftover: boolean };
+export type PlanDay = { day: Day; breakfast: Cell; lunch: Cell; dinner: Cell };
+export type PlanJson = { days: PlanDay[] };
+
+export type CheckInAnswers = {
+  meals: Meal[];
+  people: number;
+  busyDays: Day[];
+  noCookDays: Day[];
+  includeSunday: boolean;
+  leftoverLunch: boolean;
+  fridge: string[];
+};
+
+export type Recipe = {
+  id: string;
+  name: string;
+  ingredients: string[];
+  steps: string | null;
+  cook_time: number;
+  is_quick: boolean;
+  can_repeat: boolean;
+};
+
+export const cellKey = (day: Day, meal: Meal) => `${day}-${meal}`;
+
+/** Monday of the upcoming week (today if today is Monday), as YYYY-MM-DD. */
+export function upcomingMonday(from = new Date()): string {
+  const d = new Date(from);
+  const dow = d.getDay(); // 0 Sun
+  const add = dow === 1 ? 0 : (8 - dow) % 7;
+  d.setDate(d.getDate() + add);
+  return d.toISOString().slice(0, 10);
+}
+
+export const AISLES = ["Produce", "Meat & eggs", "Dairy", "Pantry", "Bakery & frozen"] as const;
+export type Aisle = (typeof AISLES)[number];
+export type GroceryItem = { name: string; qty: string; aisle: Aisle; checked: boolean };
+
+const AISLE_WORDS: Record<Exclude<Aisle, "Pantry">, string[]> = {
+  Produce: ["onion", "garlic", "tomato", "potato", "carrot", "pepper", "lettuce", "spinach", "kale", "lemon", "lime", "apple", "banana", "berr", "avocado", "cucumber", "zucchini", "courgette", "broccoli", "cauliflower", "mushroom", "ginger", "herb", "cilantro", "coriander", "parsley", "basil", "mint", "scallion", "leek", "celery", "cabbage", "squash", "pumpkin", "corn", "pea", "bean sprout", "chili", "fruit", "salad", "eggplant", "aubergine", "orange", "grape"],
+  "Meat & eggs": ["chicken", "beef", "pork", "lamb", "turkey", "bacon", "sausage", "ham", "egg", "fish", "salmon", "tuna", "shrimp", "prawn", "mince", "steak", "tofu"],
+  Dairy: ["milk", "cheese", "butter", "yogurt", "yoghurt", "cream", "paneer", "feta", "mozzarella", "parmesan", "ricotta"],
+  "Bakery & frozen": ["bread", "bun", "roll", "tortilla", "wrap", "pita", "naan", "bagel", "frozen", "baguette"],
+};
+
+export function aisleFor(name: string): Aisle {
+  const n = name.toLowerCase();
+  for (const a of ["Meat & eggs", "Dairy", "Bakery & frozen", "Produce"] as const) {
+    if (AISLE_WORDS[a].some((w) => n.includes(w))) return a;
+  }
+  return "Pantry";
+}
+
+/** Split "2 cups rice" into { amount: 2, rest: "cups rice" }. */
+function parseQty(raw: string): { amount: number | null; unit: string; name: string } {
+  const m = raw.trim().match(/^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*(.*)$/);
+  if (!m) return { amount: null, unit: "", name: raw.trim() };
+  const num = m[1].includes("/") ? Number(m[1].split("/")[0]) / Number(m[1].split("/")[1]) : Number(m[1].replace(",", "."));
+  const rest = m[2];
+  const u = rest.match(/^(g|kg|ml|l|cups?|tbsp|tsp|oz|lb|cans?|cloves?|bunch(?:es)?|pcs?)\b\s*(.*)$/i);
+  return u ? { amount: num, unit: u[1], name: u[2] } : { amount: num, unit: "", name: rest };
+}
+
+const round = (n: number) => (Math.round(n * 4) / 4).toString();
+
+/**
+ * Builds a grocery list from the plan. Recipes are assumed to serve 2;
+ * quantities scale by people / 2. Leftover cells add nothing. Fridge items are removed.
+ */
+export function buildGrocery(plan: PlanJson, recipes: Recipe[], people: number, fridge: string[]): GroceryItem[] {
+  const byId = new Map(recipes.map((r) => [r.id, r]));
+  const factor = Math.max(1, people) / 2;
+  const fridgeLc = fridge.map((f) => f.toLowerCase().trim()).filter(Boolean);
+  const agg = new Map<string, { name: string; unit: string; amount: number; count: number }>();
+  for (const d of plan.days) {
+    for (const meal of MEALS) {
+      const c = d[meal];
+      if (!c?.recipe_id || c.leftover) continue;
+      const r = byId.get(c.recipe_id);
+      if (!r) continue;
+      for (const ing of r.ingredients) {
+        const p = parseQty(ing);
+        const name = p.name.toLowerCase().trim();
+        if (!name) continue;
+        if (fridgeLc.some((f) => name.includes(f) || f.includes(name))) continue;
+        const key = `${name}|${p.unit.toLowerCase()}`;
+        const cur = agg.get(key) ?? { name: p.name.trim(), unit: p.unit, amount: 0, count: 0 };
+        if (p.amount != null) cur.amount += p.amount * factor;
+        else cur.count += 1;
+        agg.set(key, cur);
+      }
+    }
+  }
+  return [...agg.values()]
+    .map((v) => ({
+      name: v.name.charAt(0).toUpperCase() + v.name.slice(1),
+      qty: v.amount > 0 ? `${round(v.amount)}${v.unit ? " " + v.unit : ""}` : `for ${v.count} meal${v.count > 1 ? "s" : ""}`,
+      aisle: aisleFor(v.name),
+      checked: false,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
