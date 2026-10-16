@@ -21,7 +21,10 @@ function Welcome() {
       .from("profiles")
       .upsert({ id: u.user!.id, household_size: n, onboarded: true });
     setBusy(false);
-    if (error) return toast.error("Couldn't save. Try again.");
+    if (error) {
+      toast.error("Couldn't save. Try again.");
+      return;
+    }
     navigate({ to: "/recipes" });
   }
   return (

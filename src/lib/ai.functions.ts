@@ -227,7 +227,7 @@ export const suggestSwap = createServerFn({ method: "POST" })
       validator: z.object({ recipe_id: z.string() }),
       maxTokens: 2000,
     });
-    const pick = candidates.find((c) => c.id === out.recipe_id) ?? candidates[Math.floor(Math.random() * candidates.length)];
+    const pick = candidates.find((c) => c.id === out.recipe_id) ?? candidates[0]!;
     const days = pj.days.map((d) => (d.day === data.day ? { ...d, [data.meal]: { recipe_id: pick.id, leftover: false } } : d));
     const { error } = await supabase.from("plans").update({ plan_json: { days } }).eq("id", data.planId);
     if (error) throw new Error("Couldn't save the swap.");

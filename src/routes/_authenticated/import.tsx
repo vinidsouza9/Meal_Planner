@@ -40,7 +40,10 @@ function ImportPage() {
     if (!drafts) return;
     const rows = drafts.map(cleanDraft).filter((r) => r.name);
     const { error } = await supabase.from("recipes").insert(rows);
-    if (error) return toast.error("Couldn't save recipes.");
+    if (error) {
+      toast.error("Couldn't save recipes.");
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["recipes"] });
     toast.success(`Saved ${rows.length} recipe${rows.length > 1 ? "s" : ""}`);
     navigate({ to: "/recipes" });

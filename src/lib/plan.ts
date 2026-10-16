@@ -62,10 +62,11 @@ export function aisleFor(name: string): Aisle {
 function parseQty(raw: string): { amount: number | null; unit: string; name: string } {
   const m = raw.trim().match(/^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*(.*)$/);
   if (!m) return { amount: null, unit: "", name: raw.trim() };
-  const num = m[1].includes("/") ? Number(m[1].split("/")[0]) / Number(m[1].split("/")[1]) : Number(m[1].replace(",", "."));
-  const rest = m[2];
+  const g1 = m[1]!;
+  const num = g1.includes("/") ? Number(g1.split("/")[0]) / Number(g1.split("/")[1]) : Number(g1.replace(",", "."));
+  const rest = m[2] ?? "";
   const u = rest.match(/^(g|kg|ml|l|cups?|tbsp|tsp|oz|lb|cans?|cloves?|bunch(?:es)?|pcs?)\b\s*(.*)$/i);
-  return u ? { amount: num, unit: u[1], name: u[2] } : { amount: num, unit: "", name: rest };
+  return u ? { amount: num, unit: u[1] ?? "", name: u[2] ?? "" } : { amount: num, unit: "", name: rest };
 }
 
 const round = (n: number) => (Math.round(n * 4) / 4).toString();
