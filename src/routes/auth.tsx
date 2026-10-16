@@ -9,9 +9,9 @@ import { FieldError, PasswordInput } from "@/components/PasswordInput";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    mode: s.mode === "signup" ? ("signup" as const) : undefined,
-    reset: s.reset === "1" || s.reset === 1 ? ("1" as const) : undefined,
+  validateSearch: (s: Record<string, unknown>): { mode?: "signup"; reset?: "1" } => ({
+    ...(s["mode"] === "signup" ? { mode: "signup" as const } : {}),
+    ...(s["reset"] === "1" || s["reset"] === 1 ? { reset: "1" as const } : {}),
   }),
   head: () => ({
     meta: [

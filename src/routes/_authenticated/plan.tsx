@@ -36,7 +36,7 @@ const MEAL_STYLE: Record<Meal, { icon: typeof Coffee; card: string; label: strin
 };
 const DAY_BAND = ["bg-lunch-soft", "bg-breakfast-soft", "bg-dinner-soft", "bg-secondary", "bg-amber-soft", "bg-warm-soft", "bg-lunch-soft"];
 
-type CellInfo = { day: Day; meal: Meal; recipe?: Recipe; leftover: boolean; locked: boolean; noCook: boolean; empty: boolean };
+type CellInfo = { day: Day; meal: Meal; recipe: Recipe | undefined; leftover: boolean; locked: boolean; noCook: boolean; empty: boolean };
 
 function MealCard({ info, dragging, overlay }: { info: CellInfo; dragging?: boolean; overlay?: boolean }) {
   const st = MEAL_STYLE[info.meal];
@@ -134,7 +134,7 @@ function PlanPage() {
     );
   }
 
-  const shownDays = plan.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
+  const shownDays: Day[] = plan.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
   const shownMeals = plan.answers?.meals.length ? MEALS.filter((m) => plan.answers!.meals.includes(m)) : MEALS;
   const info = (day: Day, meal: Meal): CellInfo => {
     const c = plan.plan_json.days.find((x) => x.day === day)?.[meal];
@@ -275,9 +275,9 @@ function PlanPage() {
           </div>
           <div
             className="mt-3 space-y-3"
-            onTouchStart={(e) => ((e.currentTarget as HTMLDivElement).dataset.x = String(e.touches[0]!.clientX))}
+            onTouchStart={(e) => ((e.currentTarget as HTMLDivElement).dataset["x"] = String(e.touches[0]!.clientX))}
             onTouchEnd={(e) => {
-              const x0 = Number((e.currentTarget as HTMLDivElement).dataset.x);
+              const x0 = Number((e.currentTarget as HTMLDivElement).dataset["x"]);
               const dx = e.changedTouches[0]!.clientX - x0;
               if (Math.abs(dx) < 60) return;
               const i = shownDays.indexOf(curMobile);
