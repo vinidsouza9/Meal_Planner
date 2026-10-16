@@ -137,6 +137,7 @@ export type Database = {
           id: string
           ingredients: string[]
           is_quick: boolean
+          meal_type: string
           name: string
           steps: string | null
           user_id: string
@@ -148,6 +149,7 @@ export type Database = {
           id?: string
           ingredients?: string[]
           is_quick?: boolean
+          meal_type?: string
           name: string
           steps?: string | null
           user_id?: string
@@ -159,6 +161,7 @@ export type Database = {
           id?: string
           ingredients?: string[]
           is_quick?: boolean
+          meal_type?: string
           name?: string
           steps?: string | null
           user_id?: string
