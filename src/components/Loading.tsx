@@ -41,13 +41,15 @@ type LoaderProps = {
   task?: LoadingTask;
   /** Friendly error text. When set, the animation is replaced by the message and a Try again button. */
   error?: string | null;
+  /** True when the request is taking longer than usual but is still running. */
+  slow?: boolean;
   onRetry?: () => void;
   onCancel?: () => void;
   className?: string;
 };
 
 /** Full-section loading state for slow actions (AI, PDFs). */
-export function CookingLoader({ task = "other", error, onRetry, onCancel, className }: LoaderProps) {
+export function CookingLoader({ task = "other", error, slow, onRetry, onCancel, className }: LoaderProps) {
   return (
     <div className={cn("surface flex flex-col items-center justify-center gap-4 px-6 py-12 text-center", className)} role="status" aria-live="polite">
       {error ? (
@@ -63,19 +65,21 @@ export function CookingLoader({ task = "other", error, onRetry, onCancel, classN
         <>
           <CookingPotAnimation />
           <p className="text-muted-foreground">{LOADING_MESSAGES[task]}</p>
+          {slow && <p className="text-sm text-muted-foreground">Taking a little longer than usual — hang tight, we're still working on it.</p>}
         </>
       )}
     </div>
   );
 }
 
-type SlowState = { status: "idle" | "loading" | "error"; error: string | null };
+type SlowState = { status: "idle" | "loading" | "slow" | "error"; error: string | null };
 
 /**
- * Runs a slow action and tracks loading / error / "taking too long" state.
- * The request itself is never aborted — if it finishes after the slow notice, its result still applies.
+ * Runs a slow action and tracks loading / slow / error state.
+ * After SLOW_AFTER_MS the UI shows a "still working" note, not an error — the request
+ * is never aborted, and its result applies whenever it finishes. Only a real failure shows an error.
  */
-export function useSlowAction(slowMessage = "This is taking longer than usual. Please try again.") {
+export function useSlowAction() {
   const [state, setState] = useState<SlowState>({ status: "idle", error: null });
   const last = useRef<(() => Promise<unknown>) | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,7 +93,7 @@ export function useSlowAction(slowMessage = "This is taking longer than usual. P
     setState({ status: "loading", error: null });
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      if (runId.current === id) setState({ status: "error", error: slowMessage });
+      if (runId.current === id) setState({ status: "slow", error: null });
     }, SLOW_AFTER_MS);
     try {
       const out = await fn();
@@ -101,7 +105,7 @@ export function useSlowAction(slowMessage = "This is taking longer than usual. P
     } finally {
       if (runId.current === id && timer.current) clearTimeout(timer.current);
     }
-  }, [slowMessage]);
+  }, []);
 
   const retry = useCallback(() => { if (last.current) void run(last.current); }, [run]);
   const reset = useCallback(() => { runId.current++; setState({ status: "idle", error: null }); }, []);

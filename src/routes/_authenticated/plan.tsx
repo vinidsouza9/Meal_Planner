@@ -347,7 +347,7 @@ function PlanPage() {
               <DrawerTitle className="font-display text-2xl">{selInfo?.recipe?.name ?? ""}</DrawerTitle>
             </DrawerHeader>
             {busy ? (
-              <CookingLoader task="other" error={swapTask.error} onRetry={swapTask.retry} onCancel={swapTask.reset} />
+              <CookingLoader task="other" error={swapTask.error} slow={swapTask.status === "slow"} onRetry={swapTask.retry} onCancel={swapTask.reset} />
             ) : (
             <div className="grid gap-3">
               <Button size="lg" onClick={doSwap} disabled={!!selInfo?.locked}>
