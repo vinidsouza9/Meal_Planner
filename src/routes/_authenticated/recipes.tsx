@@ -80,6 +80,11 @@ function RecipesPage() {
   const [editing, setEditing] = useState<{ id?: string; draft: RecipeDraft } | null>(null);
   const [viewing, setViewing] = useState<Recipe | null>(null);
   const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const closeViewing = () => {
+    setViewing(null);
+    if (search.recipe) navigate({ search: { recipe: undefined }, replace: true });
+  };
   useEffect(() => {
     if (search.recipe && !viewing) {
       const r = recipes.find((x) => x.id === search.recipe);
@@ -257,7 +262,7 @@ function RecipesPage() {
           </ul>
         )}
 
-        <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <Dialog open={!!viewing} onOpenChange={(o) => !o && closeViewing()}>
           <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl p-0">
             <DialogHeader className="border-b p-5 text-left">
               <DialogTitle className="font-display text-2xl">{viewing?.name}</DialogTitle>
