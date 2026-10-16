@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -15,72 +15,75 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Clock, Coffee, GripVertical, Loader2, Lock, Printer, RefreshCw, Salad, ShoppingBasket, Sparkles, Unlock, UtensilsCrossed, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, GripVertical, Loader2, Lock, Printer, RefreshCw, ShoppingBasket, Sparkles, Unlock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { ShareMenu } from "@/components/ShareMenu";
 import { supabase } from "@/integrations/supabase/client";
 import { suggestSwap } from "@/lib/ai.functions";
-import { DAYS, MEALS, cellKey, swapCells, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
-import { allRecipesQuery, latestPlanQuery, type PlanRow } from "@/lib/queries";
+import { buildPlanPdf } from "@/lib/pdf";
+import { DAYS, MEALS, cellKey, dayDateLabel, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
+import { allRecipesQuery, latestPlanQuery, planForWeekQuery, type PlanRow } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/plan")({
   head: () => ({ meta: [{ title: "This week — Meal Planner" }] }),
   component: PlanPage,
 });
 
-const MEAL_STYLE: Record<Meal, { icon: typeof Coffee; card: string; label: string; dot: string }> = {
-  breakfast: { icon: Coffee, card: "bg-breakfast-soft border-breakfast/25", label: "text-breakfast", dot: "bg-breakfast" },
-  lunch: { icon: Salad, card: "bg-lunch-soft border-lunch/25", label: "text-lunch", dot: "bg-lunch" },
-  dinner: { icon: UtensilsCrossed, card: "bg-dinner-soft border-dinner/25", label: "text-dinner", dot: "bg-dinner" },
-};
-const DAY_BAND = ["bg-lunch-soft", "bg-breakfast-soft", "bg-dinner-soft", "bg-secondary", "bg-amber-soft", "bg-warm-soft", "bg-lunch-soft"];
-
 type CellInfo = { day: Day; meal: Meal; recipe: Recipe | undefined; leftover: boolean; locked: boolean; noCook: boolean; empty: boolean };
 
+function Tag({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{children}</span>;
+}
+
 function MealCard({ info, dragging, overlay }: { info: CellInfo; dragging?: boolean; overlay?: boolean }) {
-  const st = MEAL_STYLE[info.meal];
-  const Icon = st.icon;
   if (info.empty) {
     return (
-      <div className={`flex min-h-24 w-full items-center justify-center rounded-2xl border-2 border-dashed p-3 text-sm ${info.noCook ? "border-muted-foreground/30 bg-muted text-muted-foreground" : "border-border text-muted-foreground/70"}`}>
+      <div className="flex min-h-24 w-full items-center justify-center rounded-2xl border border-dashed border-border p-3 text-sm text-muted-foreground/70">
         {info.noCook ? "No cooking" : "—"}
       </div>
     );
   }
   return (
     <div
-      className={`relative flex min-h-24 w-full flex-col justify-between gap-2 rounded-2xl border p-3 text-left text-sm transition-all duration-200 ${
-        info.leftover ? "border-2 border-dashed border-lunch/50 bg-lunch-soft" : st.card
-      } ${dragging ? "opacity-40" : ""} ${overlay ? "rotate-2 scale-105 shadow-xl" : "shadow-card"}`}
+      className={`relative flex min-h-24 w-full flex-col justify-between gap-2 rounded-2xl border bg-card p-3 text-left text-sm transition-all duration-200 ${
+        dragging ? "opacity-40" : ""
+      } ${overlay ? "rotate-2 scale-105 shadow-xl" : "shadow-card"}`}
     >
-      <div className="flex items-start gap-2">
-        <span className={`grid size-7 shrink-0 place-items-center rounded-lg bg-card/80 ${st.label}`}><Icon className="size-4" /></span>
-        <span className="font-semibold leading-snug">{info.recipe?.name ?? "Removed recipe"}</span>
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-medium">
-        {info.recipe && <span className="inline-flex items-center gap-1 text-muted-foreground"><Clock className="size-3" />{info.recipe.cook_time}m</span>}
-        {info.recipe?.is_quick && !info.leftover && <span className="inline-flex items-center gap-0.5 rounded-full bg-amber px-1.5 py-0.5 text-amber-foreground"><Zap className="size-3" />Quick</span>}
-        {info.leftover && <span className="rounded-full bg-card px-1.5 py-0.5 text-lunch">Leftover</span>}
+      <p className="font-semibold leading-snug">{info.recipe?.name ?? "Removed recipe"}</p>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {info.recipe && (
+          <Tag>
+            <Clock className="size-3" />
+            {info.recipe.cook_time}m
+          </Tag>
+        )}
+        {info.recipe?.is_quick && !info.leftover && (
+          <Tag>
+            <Zap className="size-3" />
+            Quick
+          </Tag>
+        )}
+        {info.leftover && <Tag>Leftover</Tag>}
       </div>
       {info.locked && <Lock className="absolute right-2.5 top-2.5 size-3.5 text-primary" aria-label="Locked" />}
     </div>
   );
 }
 
-function Slot({ info, onOpen, canDrag, activeMeal }: { info: CellInfo; onOpen: () => void; canDrag: boolean; activeMeal: Meal | null }) {
+function Slot({ info, onOpen, canDrag, dragging }: { info: CellInfo; onOpen: () => void; canDrag: boolean; dragging: boolean }) {
   const id = cellKey(info.day, info.meal);
   const draggable = canDrag && !info.empty && !info.locked;
   const drag = useDraggable({ id, disabled: !draggable, data: info });
   const drop = useDroppable({ id, disabled: info.locked || info.empty, data: info });
-  const targetable = activeMeal === info.meal && !info.locked && !info.empty;
   return (
     <div
       ref={(n) => {
         drag.setNodeRef(n);
         drop.setNodeRef(n);
       }}
-      className={`rounded-2xl transition-shadow ${drop.isOver && targetable ? "ring-4 ring-warm ring-offset-2 ring-offset-background" : targetable && !drag.isDragging ? "ring-2 ring-warm/30" : ""}`}
+      className={`rounded-2xl transition-shadow ${drop.isOver ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}`}
     >
       <button
         type="button"
@@ -92,7 +95,7 @@ function Slot({ info, onOpen, canDrag, activeMeal }: { info: CellInfo; onOpen: (
         {...(draggable ? drag.attributes : {})}
         aria-roledescription={draggable ? "draggable meal" : undefined}
       >
-        <MealCard info={info} dragging={drag.isDragging} />
+        <MealCard info={info} dragging={drag.isDragging || dragging} />
         {draggable && <GripVertical className="absolute bottom-2.5 right-2 size-4 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />}
       </button>
     </div>
@@ -102,8 +105,12 @@ function Slot({ info, onOpen, canDrag, activeMeal }: { info: CellInfo; onOpen: (
 function PlanPage() {
   const qc = useQueryClient();
   const swap = useServerFn(suggestSwap);
-  const { data: plan, isLoading } = useQuery(latestPlanQuery);
+  const { data: latest, isLoading } = useQuery(latestPlanQuery);
   const { data: recipes = [] } = useQuery(allRecipesQuery);
+  const [weekStart, setWeekStart] = useState<string | null>(null);
+  const week = weekStart ?? latest?.week_start ?? null;
+  const { data: weekPlan } = useQuery({ ...planForWeekQuery(week ?? ""), enabled: !!week });
+  const plan = weekStart ? (weekPlan ?? null) : (latest ?? null);
   const [sel, setSel] = useState<{ day: Day; meal: Meal } | null>(null);
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState<CellInfo | null>(null);
@@ -115,9 +122,13 @@ function PlanPage() {
   );
   const byId = new Map(recipes.map((r) => [r.id, r]));
 
+  useEffect(() => {
+    if (!weekStart && latest) setWeekStart(latest.week_start);
+  }, [latest, weekStart]);
+
   if (isLoading) return <main className="mx-auto max-w-3xl px-5 pt-6 text-muted-foreground">Loading…</main>;
 
-  if (!plan) {
+  if (!latest) {
     return (
       <main className="mx-auto max-w-xl px-5 pt-6">
         <h1 className="font-display text-3xl">This week</h1>
@@ -134,17 +145,17 @@ function PlanPage() {
     );
   }
 
-  const shownDays: readonly Day[] = plan.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
-  const shownMeals = plan.answers?.meals.length ? MEALS.filter((m) => plan.answers!.meals.includes(m)) : MEALS;
+  const shownDays: readonly Day[] = plan?.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
+  const shownMeals = plan?.answers?.meals.length ? MEALS.filter((m) => plan.answers!.meals.includes(m)) : MEALS;
   const info = (day: Day, meal: Meal): CellInfo => {
-    const c = plan.plan_json.days.find((x) => x.day === day)?.[meal];
+    const c = plan?.plan_json.days.find((x) => x.day === day)?.[meal];
     return {
       day,
       meal,
       recipe: c?.recipe_id ? byId.get(c.recipe_id) : undefined,
       leftover: !!c?.leftover,
-      locked: plan.locked.includes(cellKey(day, meal)),
-      noCook: !!plan.answers?.noCookDays.includes(day),
+      locked: plan?.locked.includes(cellKey(day, meal)) ?? false,
+      noCook: !!plan?.answers?.noCookDays.includes(day),
       empty: !c?.recipe_id,
     };
   };
@@ -152,11 +163,13 @@ function PlanPage() {
 
   async function savePlan(next: PlanJson, prev: PlanJson) {
     if (!plan) return;
-    const key = latestPlanQuery.queryKey;
+    const key = planForWeekQuery(plan.week_start).queryKey;
     qc.setQueryData<PlanRow | null>(key, (old) => (old ? { ...old, plan_json: next } : old));
+    qc.setQueryData<PlanRow | null>(latestPlanQuery.queryKey, (old) => (old?.id === plan.id ? { ...old, plan_json: next } : old));
     const { error } = await supabase.from("plans").update({ plan_json: next }).eq("id", plan.id);
     if (error) {
       qc.setQueryData<PlanRow | null>(key, (old) => (old ? { ...old, plan_json: prev } : old));
+      qc.setQueryData<PlanRow | null>(latestPlanQuery.queryKey, (old) => (old?.id === plan.id ? { ...old, plan_json: prev } : old));
       toast.error("Couldn't save the move.");
       return false;
     }
@@ -173,7 +186,14 @@ function PlanPage() {
     const next = swapCells(prev, plan.locked, a, b);
     if (!next) return;
     if (await savePlan(next, prev)) {
-      toast.success(`Swapped ${a.day} and ${b.day} ${a.meal}`, {
+      // A moved recipe lands in b's slot; a's recipe lands in a's old slot.
+      if (longDinnerOnBusyDay(plan.answers, a.recipe, b.day, b.meal)) {
+        toast.warning(`${a.recipe!.name} takes ${a.recipe!.cook_time} min — ${b.day} is a busy day.`, {
+          action: { label: "Undo", onClick: () => savePlan(prev, next) },
+        });
+        return;
+      }
+      toast.success(`Swapped ${a.day} ${a.meal} with ${b.day} ${b.meal}`, {
         action: { label: "Undo", onClick: () => savePlan(prev, next) },
       });
     }
@@ -208,101 +228,117 @@ function PlanPage() {
     }
   }
 
-  const weekLabel = new Date(plan.week_start + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const curMobile = shownDays.includes(mobileDay) ? mobileDay : shownDays[0]!;
+  const wk = plan?.week_start ?? week!;
 
   return (
     <main className="mx-auto max-w-6xl px-5 pt-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-warm">Week of {weekLabel}</p>
-          <h1 className="font-display text-3xl">This week</h1>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="icon" aria-label="Print plan"><Link to="/print"><Printer /></Link></Button>
-          <Button asChild variant="secondary"><Link to="/checkin"><RefreshCw /> New plan</Link></Button>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-3 text-xs font-medium text-muted-foreground">
-        {MEALS.map((m) => (
-          <span key={m} className="inline-flex items-center gap-1.5 capitalize"><span className={`size-2.5 rounded-full ${MEAL_STYLE[m].dot}`} />{m}</span>
-        ))}
-        <span className="hidden md:inline">· Drag a meal onto another day to swap · Tap for options</span>
-      </div>
-
-      <DndContext
-        sensors={sensors}
-        onDragStart={(e: DragStartEvent) => setActive(e.active.data.current as CellInfo)}
-        onDragCancel={() => setActive(null)}
-        onDragEnd={onDragEnd}
-      >
-        {/* Desktop grid */}
-        <div className="mt-5 hidden md:block">
-          <div className="grid gap-3" style={{ gridTemplateColumns: `6.5rem repeat(${shownDays.length}, minmax(0, 1fr))` }}>
-            <div />
-            {shownDays.map((d, i) => (
-              <div key={d} className={`rounded-xl py-2 text-center text-sm font-bold ${DAY_BAND[i]}`}>{d}</div>
-            ))}
-            {shownMeals.map((m) => {
-              const Icon = MEAL_STYLE[m].icon;
-              return (
-                <div key={m} className="contents">
-                  <div className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide ${MEAL_STYLE[m].label}`}><Icon className="size-4" />{m}</div>
-                  {shownDays.map((d) => (
-                    <Slot key={d} info={info(d, m)} onOpen={() => setSel({ day: d, meal: m })} canDrag activeMeal={active?.meal ?? null} />
-                  ))}
-                </div>
-              );
-            })}
+          <h1 className="font-display text-3xl">Week of {weekRangeLabel(wk)}</h1>
+          <div className="mt-2 flex items-center gap-1">
+            <Button variant="outline" size="icon" aria-label="Previous week" onClick={() => setWeekStart(shiftWeek(wk, -1))}>
+              <ChevronLeft />
+            </Button>
+            <Button variant="outline" size="icon" aria-label="Next week" onClick={() => setWeekStart(shiftWeek(wk, 1))}>
+              <ChevronRight />
+            </Button>
           </div>
         </div>
-
-        {/* Mobile: one day at a time */}
-        <div className="mt-5 md:hidden">
-          <div role="tablist" aria-label="Day" className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-2">
-            {shownDays.map((d, i) => (
-              <button
-                key={d}
-                role="tab"
-                aria-selected={curMobile === d}
-                onClick={() => setMobileDay(d)}
-                className={`min-h-11 min-w-14 rounded-xl px-3 text-sm font-bold transition-colors ${curMobile === d ? "bg-primary text-primary-foreground" : DAY_BAND[i]}`}
-              >
-                {d}
-              </button>
-            ))}
+        {plan && (
+          <div className="flex flex-wrap gap-2">
+            <ShareMenu
+              build={() => buildPlanPdf(plan.plan_json, recipes, plan.week_start)}
+              title="Meal plan"
+              message={`Here's our meal plan for ${weekRangeLabel(plan.week_start)}.`}
+              emailSubject={`Meal plan: ${weekRangeLabel(plan.week_start)}`}
+            />
+            <Button asChild variant="outline" size="icon" aria-label="Print plan"><Link to="/print"><Printer /></Link></Button>
+            <Button asChild variant="secondary"><Link to="/checkin"><RefreshCw /> New plan</Link></Button>
           </div>
-          <div
-            className="mt-3 space-y-3"
-            onTouchStart={(e) => ((e.currentTarget as HTMLDivElement).dataset["x"] = String(e.touches[0]!.clientX))}
-            onTouchEnd={(e) => {
-              const x0 = Number((e.currentTarget as HTMLDivElement).dataset["x"]);
-              const dx = e.changedTouches[0]!.clientX - x0;
-              if (Math.abs(dx) < 60) return;
-              const i = shownDays.indexOf(curMobile);
-              const n = shownDays[dx < 0 ? Math.min(shownDays.length - 1, i + 1) : Math.max(0, i - 1)]!;
-              setMobileDay(n);
-            }}
+        )}
+      </div>
+
+      {!plan ? (
+        <div className="surface mt-6 p-8 text-center">
+          <p className="font-medium">No plan for this week</p>
+          <p className="mt-1 text-sm text-muted-foreground">Go back to a planned week, or start a new check-in.</p>
+          <Button asChild className="mt-5"><Link to="/checkin"><Sparkles /> Plan a week</Link></Button>
+        </div>
+      ) : (
+        <>
+          <p className="mt-3 hidden text-xs font-medium text-muted-foreground md:block">Drag any meal onto another to swap · Tap a meal for options</p>
+
+          <DndContext
+            sensors={sensors}
+            onDragStart={(e: DragStartEvent) => setActive(e.active.data.current as CellInfo)}
+            onDragCancel={() => setActive(null)}
+            onDragEnd={onDragEnd}
           >
-            {shownMeals.map((m) => {
-              const Icon = MEAL_STYLE[m].icon;
-              return (
-                <div key={m}>
-                  <p className={`mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide ${MEAL_STYLE[m].label}`}><Icon className="size-4" />{m}</p>
-                  <Slot info={info(curMobile, m)} onOpen={() => setSel({ day: curMobile, meal: m })} canDrag={false} activeMeal={null} />
-                </div>
-              );
-            })}
-          </div>
-        </div>
+            {/* Desktop grid */}
+            <div className="mt-5 hidden md:block">
+              <div className="grid gap-3" style={{ gridTemplateColumns: `6.5rem repeat(${shownDays.length}, minmax(0, 1fr))` }}>
+                <div />
+                {shownDays.map((d) => (
+                  <div key={d} className="rounded-xl border bg-card py-2 text-center text-sm font-semibold">{dayDateLabel(wk, d)}</div>
+                ))}
+                {shownMeals.map((m) => (
+                  <div key={m} className="contents">
+                    <div className="flex items-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">{m}</div>
+                    {shownDays.map((d) => (
+                      <Slot key={d} info={info(d, m)} onOpen={() => setSel({ day: d, meal: m })} canDrag dragging={false} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        <DragOverlay dropAnimation={{ duration: 180 }}>{active ? <MealCard info={active} overlay /> : null}</DragOverlay>
-      </DndContext>
+            {/* Mobile: one day at a time */}
+            <div className="mt-5 md:hidden">
+              <div role="tablist" aria-label="Day" className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-2">
+                {shownDays.map((d) => (
+                  <button
+                    key={d}
+                    role="tab"
+                    aria-selected={curMobile === d}
+                    onClick={() => setMobileDay(d)}
+                    className={`min-h-11 min-w-14 rounded-xl border px-3 text-sm font-semibold transition-colors ${
+                      curMobile === d ? "border-primary bg-primary text-primary-foreground" : "bg-card text-foreground"
+                    }`}
+                  >
+                    {dayDateLabel(wk, d)}
+                  </button>
+                ))}
+              </div>
+              <div
+                className="mt-3 space-y-3"
+                onTouchStart={(e) => ((e.currentTarget as HTMLDivElement).dataset["x"] = String(e.touches[0]!.clientX))}
+                onTouchEnd={(e) => {
+                  const x0 = Number((e.currentTarget as HTMLDivElement).dataset["x"]);
+                  const dx = e.changedTouches[0]!.clientX - x0;
+                  if (Math.abs(dx) < 60) return;
+                  const i = shownDays.indexOf(curMobile);
+                  const n = shownDays[dx < 0 ? Math.min(shownDays.length - 1, i + 1) : Math.max(0, i - 1)]!;
+                  setMobileDay(n);
+                }}
+              >
+                {shownMeals.map((m) => (
+                  <div key={m}>
+                    <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{m}</p>
+                    <Slot info={info(curMobile, m)} onOpen={() => setSel({ day: curMobile, meal: m })} canDrag dragging={false} />
+                  </div>
+                ))}
+              </div>
+            </div>
 
-      <Button asChild size="lg" variant="warm" className="mt-8 w-full sm:w-auto">
-        <Link to="/grocery"><ShoppingBasket /> Grocery list</Link>
-      </Button>
+            <DragOverlay dropAnimation={{ duration: 180 }}>{active ? <MealCard info={active} overlay /> : null}</DragOverlay>
+          </DndContext>
+
+          <Button asChild size="lg" className="mt-8 w-full sm:w-auto">
+            <Link to="/grocery"><ShoppingBasket /> Grocery list</Link>
+          </Button>
+        </>
+      )}
 
       <Drawer open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
         <DrawerContent>
