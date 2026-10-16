@@ -19,3 +19,4 @@
 - PDFs are built client-side with jsPDF in `src/lib/pdf.ts` (plan + grocery list); sharing goes through `src/components/ShareMenu.tsx` + `src/lib/share.ts` (native share sheet with the file, else Download/WhatsApp/Email fallbacks).
 - Recipe photos live in the private `recipe-images` storage bucket (public buckets are blocked on this platform); rows store the storage path in `recipes.image_url` and `src/lib/queries.ts` batch-signs paths into `imageSrc` for display. Uploads go through `src/lib/recipe-images.ts`.
 - Authenticated layout is a single top header in `src/routes/_authenticated/route.tsx` (nav links + user dropdown + mobile sheet); there is no bottom nav.
+- Loading UI lives in `src/components/Loading.tsx` (CookingLoader, useSlowAction, LoadingButton, skeletons) — slow actions use useSlowAction so errors/20s timeouts show one consistent "Try again" state without aborting the request.

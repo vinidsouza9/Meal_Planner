@@ -11,3 +11,5 @@
 - [x] 9. Recipe photos: storage bucket, image_url, upload/remove, AI import option, placeholders
 - [x] 10. Grocery list PDF share (same menu), keep Print/Copy
 - [x] Verify: typecheck, tests, build log, browser spot-check
+- [x] 13. Loading feedback: cooking loader, button spinners, skeletons, 20s/error Try again, reduced motion, aria-live
+- [ ] 14. Weekly email reminder (Resend) — waiting on user's go-ahead + Resend API key
