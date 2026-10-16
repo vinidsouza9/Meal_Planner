@@ -10,6 +10,27 @@ export async function uploadRecipeImage(blob: Blob, userId: string): Promise<str
   return path;
 }
 
+/** Stage uploads without deleting old photos until the recipe row saves successfully. */
+export async function prepareRecipePhoto(draft: { photoBlob?: Blob | null; originalBlob?: Blob | null; removePhoto?: boolean; image_crop?: import('./photo-crop').PhotoCrop | null }, previous: { image_url?: string | null; original_image_url?: string | null }) {
+  const uploaded: string[] = [];
+  let image_url = previous.image_url ?? null;
+  let original_image_url = previous.original_image_url ?? previous.image_url ?? null;
+  try {
+    if (draft.removePhoto) { image_url = null; original_image_url = null; }
+    else if (draft.photoBlob) {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) throw new Error('Please log in again.');
+      image_url = await uploadRecipeImage(draft.photoBlob, data.user.id); uploaded.push(image_url);
+      if (draft.originalBlob) { original_image_url = await uploadRecipeImage(draft.originalBlob, data.user.id); uploaded.push(original_image_url); }
+    }
+  } catch (e) { await Promise.all(uploaded.map(removeRecipeImage)); throw e; }
+  return {
+    row: { image_url, original_image_url, image_crop: draft.removePhoto ? null : draft.image_crop ?? null },
+    rollback: () => Promise.all(uploaded.map(removeRecipeImage)),
+    commit: () => Promise.all([...new Set([previous.image_url, previous.original_image_url])].filter((path): path is string => !!path && path !== image_url && path !== original_image_url).map(removeRecipeImage)),
+  };
+}
+
 export async function removeRecipeImage(path: string): Promise<void> {
   await supabase.storage.from(BUCKET).remove([path]);
 }
