@@ -6,6 +6,8 @@ const MODEL = "anthropic/claude-sonnet-5";
 export async function claudeJSON<T>(opts: {
   system: string;
   user: string;
+  /** Optional images (base64, no data: prefix) sent before the text. */
+  images?: { mediaType: string; data: string }[];
   schema: Record<string, unknown>;
   validator: z.ZodType<T>;
   maxTokens?: number;
@@ -24,7 +26,17 @@ export async function claudeJSON<T>(opts: {
       max_tokens: opts.maxTokens ?? 8000,
       stream: true,
       system: opts.system + "\nRespond ONLY with JSON matching the schema. No prose.",
-      messages: [{ role: "user", content: opts.user }],
+      messages: [
+        {
+          role: "user",
+          content: opts.images?.length
+            ? [
+                ...opts.images.map((i) => ({ type: "image", source: { type: "base64", media_type: i.mediaType, data: i.data } })),
+                { type: "text", text: opts.user },
+              ]
+            : opts.user,
+        },
+      ],
       output_config: { format: { type: "json_schema", schema: opts.schema } },
     }),
   });

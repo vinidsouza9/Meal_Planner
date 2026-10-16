@@ -10,7 +10,61 @@ const recipeOut = z.object({
   steps: z.string(),
   cook_time: z.number().int().min(0).max(1000),
   is_quick: z.boolean(),
+  meal_type: z.enum(["breakfast", "lunch", "dinner", "any"]),
 });
+
+const recipeSchemaItem = {
+  type: "object",
+  additionalProperties: false,
+  required: ["name", "meal_type", "ingredients", "steps", "cook_time", "is_quick"],
+  properties: {
+    name: { type: "string" },
+    meal_type: { type: "string", enum: ["breakfast", "lunch", "dinner", "any"] },
+    ingredients: { type: "array", items: { type: "string" } },
+    steps: { type: "string" },
+    cook_time: { type: "integer" },
+    is_quick: { type: "boolean" },
+  },
+};
+
+const RECIPE_RULES =
+  "Ingredients are raw items with quantities for 2 servings (e.g. '200 g chicken thighs'). " +
+  "Leave out salt, oil, water and spices — they are pantry staples. Steps are short numbered lines. " +
+  "meal_type is breakfast, lunch or dinner when the dish clearly suits one, otherwise any. " +
+  "is_quick is true only when cook_time is 20 minutes or less.";
+
+export const parseRecipePhotosWithAI = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { images: { mediaType: string; data: string }[] }) =>
+    z
+      .object({
+        images: z
+          .array(z.object({ mediaType: z.enum(["image/jpeg", "image/png", "image/webp"]), data: z.string().min(10).max(4_000_000) }))
+          .min(1)
+          .max(3),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const out = await claudeJSON({
+      system:
+        "You read photos of recipes (cookbook pages, cards, screenshots, handwritten notes) and turn them into structured recipes. " +
+        RECIPE_RULES +
+        " If the photos show the same recipe across pages, return it once. If no recipe is readable, set readable=false and return no recipes.",
+      user: "Extract the recipe(s) from these photos.",
+      images: data.images,
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        required: ["readable", "recipes"],
+        properties: { readable: { type: "boolean" }, recipes: { type: "array", items: recipeSchemaItem } },
+      },
+      validator: z.object({ readable: z.boolean(), recipes: z.array(recipeOut) }),
+    });
+    if (!out.readable || !out.recipes.length)
+      throw new Error("We couldn't find a recipe in that photo. Try a clearer, well-lit shot of the recipe page.");
+    return out.recipes.map((r) => ({ ...r, is_quick: r.cook_time <= 20 && r.is_quick }));
+  });
 
 export const parseRecipesWithAI = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -19,10 +73,8 @@ export const parseRecipesWithAI = createServerFn({ method: "POST" })
     const out = await claudeJSON({
       system:
         "You turn pasted recipes or lists of dish names into structured recipes for a weekly meal planner. " +
-        "Ingredients are raw items with quantities for 2 servings (e.g. '200 g chicken thighs'). " +
-        "Leave out salt, oil, water and spices — they are pantry staples. " +
-        "If only a dish name is given, write a sensible typical version. Steps are short numbered lines. " +
-        "is_quick is true only when cook_time is 20 minutes or less.",
+        RECIPE_RULES +
+        " If only a dish name is given, write a sensible typical version.",
       user: data.text,
       schema: {
         type: "object",
@@ -31,18 +83,7 @@ export const parseRecipesWithAI = createServerFn({ method: "POST" })
         properties: {
           recipes: {
             type: "array",
-            items: {
-              type: "object",
-              additionalProperties: false,
-              required: ["name", "ingredients", "steps", "cook_time", "is_quick"],
-              properties: {
-                name: { type: "string" },
-                ingredients: { type: "array", items: { type: "string" } },
-                steps: { type: "string" },
-                cook_time: { type: "integer" },
-                is_quick: { type: "boolean" },
-              },
-            },
+            items: recipeSchemaItem,
           },
         },
       },
