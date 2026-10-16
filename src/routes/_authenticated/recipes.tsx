@@ -31,7 +31,7 @@ import { allRecipesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/recipes")({
   head: () => pageMeta("Recipes", "Browse and manage your saved recipes and recipe pictures."),
-  validateSearch: (s: Record<string, unknown>) => ({ recipe: typeof s.recipe === "string" ? s.recipe : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ recipe: typeof s["recipe"] === "string" ? (s["recipe"] as string) : undefined }),
   component: RecipesPage,
 });
 
