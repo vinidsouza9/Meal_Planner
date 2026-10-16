@@ -83,8 +83,8 @@ function RecipePhotoField({ value, onChange, idPrefix }: { value: RecipeDraft; o
       {preview ? (
         <div className="relative">
           <img src={preview} alt="Recipe photo" className="aspect-[4/3] w-full rounded-xl object-cover" />
-          <button
-            type="button"
+          <Button
+            variant="secondary" size="icon" type="button"
             onClick={() => onChange({ ...value, photoBlob: null, originalBlob: null, photoPreview: null, removePhoto: true })}
             className="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-card/90 text-destructive shadow"
             aria-label="Remove photo"
