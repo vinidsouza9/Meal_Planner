@@ -16,7 +16,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { ChevronLeft, ChevronRight, Clock, GripVertical, Loader2, Lock, Printer, RefreshCw, ShoppingBasket, Sparkles, Unlock, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Flame, GripVertical, Loader2, Lock, Printer, RefreshCw, ShoppingBasket, Sparkles, Unlock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -102,6 +102,21 @@ function Slot({ info, onOpen, canDrag, dragging }: { info: CellInfo; onOpen: () 
       </button>
     </div>
   );
+}
+
+function currentSlot(): { day: Day; meal: Meal } {
+  const now = new Date();
+  const day = DAYS[(now.getDay() + 6) % 7]!;
+  const h = now.getHours();
+  const meal: Meal = h < 11 ? "breakfast" : h < 15 ? "lunch" : "dinner";
+  return { day, meal };
+}
+
+function currentWeekStart(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
 function PlanPage() {
