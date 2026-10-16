@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { claudeJSON } from "./claude.server";
-import { DAYS, MEALS, type CheckInAnswers, type PlanJson, type Recipe } from "./plan";
+import { DAYS, MEALS, enforceMealTypes, type CheckInAnswers, type PlanJson, type Recipe } from "./plan";
 
 const recipeOut = z.object({
   name: z.string().min(1),
@@ -10,16 +10,16 @@ const recipeOut = z.object({
   steps: z.string(),
   cook_time: z.number().int().min(0).max(1000),
   is_quick: z.boolean(),
-  meal_type: z.enum(["breakfast", "lunch", "dinner", "any"]),
+  meal_types: z.array(z.enum(MEALS)).min(1).max(3),
 });
 
 const recipeSchemaItem = {
   type: "object",
   additionalProperties: false,
-  required: ["name", "meal_type", "ingredients", "steps", "cook_time", "is_quick"],
+  required: ["name", "meal_types", "ingredients", "steps", "cook_time", "is_quick"],
   properties: {
     name: { type: "string" },
-    meal_type: { type: "string", enum: ["breakfast", "lunch", "dinner", "any"] },
+    meal_types: { type: "array", minItems: 1, maxItems: 3, uniqueItems: true, items: { type: "string", enum: [...MEALS] } },
     ingredients: { type: "array", items: { type: "string" } },
     steps: { type: "string" },
     cook_time: { type: "integer" },
@@ -30,7 +30,7 @@ const recipeSchemaItem = {
 const RECIPE_RULES =
   "Ingredients are raw items with quantities for 2 servings (e.g. '200 g chicken thighs'). " +
   "Leave out salt, oil, water and spices — they are pantry staples. Steps are short numbered lines. " +
-  "meal_type is breakfast, lunch or dinner when the dish clearly suits one, otherwise any. " +
+  "meal_types is a nonempty array of breakfast, lunch, dinner: include every meal this dish suits. " +
   "is_quick is true only when cook_time is 20 minutes or less.";
 
 export const parseRecipePhotosWithAI = createServerFn({ method: "POST" })
@@ -107,7 +107,7 @@ const planZ = z.object({
 
 function libraryText(recipes: Recipe[]) {
   return recipes
-    .map((r) => `- id=${r.id} | ${r.name} | ${r.meal_type ?? "any"} | ${r.cook_time} min${r.is_quick ? " | QUICK" : ""}${r.can_repeat ? " | CAN_REPEAT" : ""}`)
+    .map((r) => `- id=${r.id} | ${r.name} | ${r.meal_types.join(", ")} | ${r.cook_time} min${r.is_quick ? " | QUICK" : ""}${r.can_repeat ? " | CAN_REPEAT" : ""}`)
     .join("\n");
 }
 
@@ -143,7 +143,7 @@ function enforce(plan: PlanJson, a: CheckInAnswers, recipes: Recipe[]): PlanJson
       if (!prev || prev.dinner.recipe_id !== d.lunch.recipe_id) d.lunch = { ...d.lunch, leftover: false };
     }
   });
-  return { days };
+  return enforceMealTypes({ days }, recipes);
 }
 
 export const generatePlan = createServerFn({ method: "POST" })
@@ -182,7 +182,7 @@ export const generatePlan = createServerFn({ method: "POST" })
         "5. If Sunday is excluded, all Sunday slots are \"\".\n" +
         "6. If leftover lunches are allowed, lunch may reuse the previous day's dinner recipe_id with leftover=true. Otherwise leftover=false everywhere.\n" +
         "7. Don't use any of last week's dishes unless marked CAN_REPEAT.\n" +
-        "8. Prefer recipes whose meal type matches the slot (any fits all). Prefer recipes that use fridge items. Vary dishes across the week.\n" +
+        "8. ONLY use recipes in slots included in their meal_types tags, including leftover lunches. Prefer recipes that use fridge items. Vary dishes across the week.\n" +
         "Return exactly 7 days Mon..Sun.",
       user:
         `Library:\n${libraryText(recipes as Recipe[])}\n\n` +
@@ -216,18 +216,10 @@ export const generatePlan = createServerFn({ method: "POST" })
     });
     const plan = enforce(raw as PlanJson, a, recipes as Recipe[]);
 
-    const { data: ci } = await supabase
-      .from("check_ins")
-      .insert({ week_start: data.weekStart, answers: a })
-      .select("id")
-      .single();
-    const { data: saved, error: saveErr } = await supabase
-      .from("plans")
-      .insert({ week_start: data.weekStart, plan_json: plan, check_in_id: ci?.id ?? null, locked: [] })
-      .select("id")
-      .single();
-    if (saveErr) throw new Error("Couldn't save the plan.");
-    return { id: saved.id };
+    const { data: saved, error: saveErr } = await supabase.rpc("save_week_plan", { p_week: data.weekStart, p_answers: a, p_plan: plan });
+    if (saveErr || !saved) throw new Error("Couldn't save the plan.");
+    return { id: saved };
+
   });
 
 export const suggestSwap = createServerFn({ method: "POST" })
@@ -248,9 +240,7 @@ export const suggestSwap = createServerFn({ method: "POST" })
     const used = new Set<string>();
     pj.days.forEach((d) => MEALS.forEach((m) => d[m]?.recipe_id && used.add(d[m].recipe_id)));
     const needsQuick = data.meal === "dinner" && !!answers?.busyDays.includes(data.day);
-    const candidates = (recipes as Recipe[]).filter((r) => r.id !== current && (!needsQuick || r.is_quick));
-    const typed = candidates.filter((r) => !r.meal_type || r.meal_type === "any" || r.meal_type === data.meal);
-    if (typed.length) candidates.splice(0, candidates.length, ...typed);
+    const candidates = (recipes as Recipe[]).filter((r) => r.id !== current && r.meal_types.includes(data.meal) && (!needsQuick || r.is_quick));
     if (!candidates.length) throw new Error("No other recipe fits this slot. Add more recipes.");
 
     const out = await claudeJSON({
@@ -270,7 +260,8 @@ export const suggestSwap = createServerFn({ method: "POST" })
       validator: z.object({ recipe_id: z.string() }),
       maxTokens: 2000,
     });
-    const pick = candidates.find((c) => c.id === out.recipe_id) ?? candidates[0]!;
+    const pick = candidates.find((c) => c.id === out.recipe_id) ?? candidates[0];
+    if (!pick) throw new Error("No other recipe fits this slot.");
     const days = pj.days.map((d) => (d.day === data.day ? { ...d, [data.meal]: { recipe_id: pick.id, leftover: false } } : d));
     const { error } = await supabase.from("plans").update({ plan_json: { days } }).eq("id", data.planId);
     if (error) throw new Error("Couldn't save the swap.");

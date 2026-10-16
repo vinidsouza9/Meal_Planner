@@ -36,6 +36,13 @@
       "when": 1792184936166,
       "tag": "0004_meal_types_profile_photo_originals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792184996452,
+      "tag": "0005_one_plan_per_week",
+      "breakpoints": true
     }
   ]
 }

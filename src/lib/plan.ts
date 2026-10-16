@@ -26,13 +26,15 @@ export type Recipe = {
   cook_time: number;
   is_quick: boolean;
   can_repeat: boolean;
-  meal_type: MealType;
+  meal_types: Meal[];
+  original_image_url?: string | null;
+  image_crop?: import("./photo-crop").PhotoCrop | null;
   image_url: string | null;
   /** Signed URL for image_url, filled in by queries. */
   imageSrc?: string | null;
 };
 
-export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "any"] as const;
+export const MEAL_TYPES = MEALS;
 export type MealType = (typeof MEAL_TYPES)[number];
 
 /** Swap any two cells (across days or meal types). Returns null if the move isn't allowed. */
@@ -128,7 +130,7 @@ export function aisleFor(name: string): Aisle {
 function parseQty(raw: string): { amount: number | null; unit: string; name: string } {
   const m = raw.trim().match(/^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*(.*)$/);
   if (!m) return { amount: null, unit: "", name: raw.trim() };
-  const g1 = m[1]!;
+  const g1 = m[1] ?? "";
   const num = g1.includes("/") ? Number(g1.split("/")[0]) / Number(g1.split("/")[1]) : Number(g1.replace(",", "."));
   const rest = m[2] ?? "";
   const u = rest.match(/^(g|kg|ml|l|cups?|tbsp|tsp|oz|lb|cans?|cloves?|bunch(?:es)?|pcs?)\b\s*(.*)$/i);
@@ -173,4 +175,17 @@ export function buildGrocery(plan: PlanJson, recipes: Recipe[], people: number, 
       checked: false,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Never retain a generated recipe in a meal slot it is not tagged for. */
+export function enforceMealTypes(plan: PlanJson, recipes: Recipe[]): PlanJson {
+  const byId = new Map(recipes.map((recipe) => [recipe.id, recipe]));
+  return { days: plan.days.map((day) => {
+    const out = { ...day };
+    for (const meal of MEALS) {
+      const cell = day[meal];
+      if (cell.recipe_id && !byId.get(cell.recipe_id)?.meal_types.includes(meal)) out[meal] = { recipe_id: "", leftover: false };
+    }
+    return out;
+  }) };
 }
