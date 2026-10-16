@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Keep Now cooking visible with today's actual plan and move Grocery list to top-right planner actions; verified signed-in and meal-time tests pass.
+
 - [x] 1–6 attached updates: multi-meal recipes, single-page Plan my week, pastel planner, restrained print, unique saved weeks
 - [x] 7–11 attached updates: required signup names, account page, avatar, personalized header, Vineeta account
 - [x] 12. Photo editor: crop/zoom/rotate, originals retained, adjust recipe and avatar photos; saved/reopened images, keyboard and mobile layout verified

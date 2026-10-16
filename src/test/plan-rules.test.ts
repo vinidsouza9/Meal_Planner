@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { DAYS, dayDateLabel, groceryText, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type CheckInAnswers, type PlanJson, type Recipe } from "@/lib/plan";
+import { DAYS, currentCookingSlot, dayDateLabel, groceryText, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type CheckInAnswers, type PlanJson, type Recipe } from "@/lib/plan";
 
 const c = (id: string) => ({ recipe_id: id, leftover: false });
+
+describe("today's cooking slot", () => {
+  it("uses the local day and current week rather than an upcoming plan's week", () => {
+    expect(currentCookingSlot(new Date(2026, 9, 16, 15, 14))).toEqual({ day: "Fri", meal: "dinner", weekStart: "2026-10-12" });
+  });
+  it("selects breakfast before 11, lunch until 15, then dinner", () => {
+    expect(currentCookingSlot(new Date(2026, 9, 16, 10, 59)).meal).toBe("breakfast");
+    expect(currentCookingSlot(new Date(2026, 9, 16, 11, 0)).meal).toBe("lunch");
+    expect(currentCookingSlot(new Date(2026, 9, 16, 14, 59)).meal).toBe("lunch");
+    expect(currentCookingSlot(new Date(2026, 9, 16, 15, 0)).meal).toBe("dinner");
+  });
+});
 const plan: PlanJson = {
   days: DAYS.map((day, i) => ({ day, breakfast: c(`b${i}`), lunch: c(`l${i}`), dinner: c(`d${i}`) })),
 };

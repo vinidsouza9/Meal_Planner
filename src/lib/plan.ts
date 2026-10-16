@@ -68,6 +68,18 @@ export function groceryText(items: GroceryItem[], title?: string): string {
 
 export const cellKey = (day: Day, meal: Meal) => `${day}-${meal}`;
 
+/** Today's meal and Monday in the user's local timezone. */
+export function currentCookingSlot(now = new Date()): { day: Day; meal: Meal; weekStart: string } {
+  const day = DAYS[(now.getDay() + 6) % 7] ?? "Mon";
+  const hour = now.getHours();
+  const meal: Meal = hour < 11 ? "breakfast" : hour < 15 ? "lunch" : "dinner";
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const weekStart = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+  return { day, meal, weekStart };
+}
+
 /** True when a recipe over 20 minutes lands in dinner on a busy day (allowed, but worth a warning). */
 export function longDinnerOnBusyDay(answers: CheckInAnswers | null | undefined, recipe: Recipe | undefined, day: Day, meal: Meal): boolean {
   return !!answers && meal === "dinner" && answers.busyDays.includes(day) && !!recipe && recipe.cook_time > 20;

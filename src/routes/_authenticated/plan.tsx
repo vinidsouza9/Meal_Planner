@@ -25,7 +25,7 @@ import { CookingLoader, PlanGridSkeleton, useSlowAction } from "@/components/Loa
 import { supabase } from "@/integrations/supabase/client";
 import { suggestSwap } from "@/lib/ai.functions";
 import { buildPlanPdf } from "@/lib/pdf";
-import { DAYS, MEALS, cellKey, dayDateLabel, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
+import { DAYS, MEALS, cellKey, currentCookingSlot, dayDateLabel, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery, planForWeekQuery, type PlanRow } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/plan")({
@@ -104,21 +104,6 @@ function Slot({ info, onOpen, canDrag, dragging }: { info: CellInfo; onOpen: () 
   );
 }
 
-function currentSlot(): { day: Day; meal: Meal } {
-  const now = new Date();
-  const day = DAYS[(now.getDay() + 6) % 7]!;
-  const h = now.getHours();
-  const meal: Meal = h < 11 ? "breakfast" : h < 15 ? "lunch" : "dinner";
-  return { day, meal };
-}
-
-function currentWeekStart(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
 function PlanPage() {
   const qc = useQueryClient();
   const swap = useServerFn(suggestSwap);
@@ -133,6 +118,17 @@ function PlanPage() {
   const busy = swapTask.active;
   const [active, setActive] = useState<CellInfo | null>(null);
   const [mobileDay, setMobileDay] = useState<Day>("Mon");
+  const [nowSlot, setNowSlot] = useState<ReturnType<typeof currentCookingSlot> | null>(null);
+  useEffect(() => {
+    const update = () => setNowSlot(currentCookingSlot());
+    update();
+    const timer = window.setInterval(update, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const { data: todayPlan, isLoading: todayLoading } = useQuery({
+    ...planForWeekQuery(nowSlot?.weekStart ?? ""),
+    enabled: !!nowSlot,
+  });
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
@@ -244,12 +240,8 @@ function PlanPage() {
 
   const curMobile = shownDays.includes(mobileDay) ? mobileDay : shownDays[0]!;
   const wk = plan?.week_start ?? week!;
-  const nowSlot = currentSlot();
-  const nowInfo =
-    plan && wk === currentWeekStart() && shownDays.includes(nowSlot.day) && shownMeals.includes(nowSlot.meal)
-      ? info(nowSlot.day, nowSlot.meal)
-      : null;
-  const nowRecipe = nowInfo && !nowInfo.empty ? nowInfo.recipe : null;
+  const todayCell = nowSlot ? todayPlan?.plan_json.days.find((day) => day.day === nowSlot.day)?.[nowSlot.meal] : null;
+  const nowRecipe = todayCell?.recipe_id ? byId.get(todayCell.recipe_id) : null;
 
   return (
     <main className="mx-auto max-w-6xl px-5 pt-6">
@@ -267,6 +259,7 @@ function PlanPage() {
         </div>
         {plan && (
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline"><Link to="/grocery"><ShoppingBasket /> Grocery list</Link></Button>
             <ShareMenu
               build={() => buildPlanPdf(plan.plan_json, recipes, plan.week_start)}
               title="Meal plan"
@@ -354,7 +347,7 @@ function PlanPage() {
             <DragOverlay dropAnimation={{ duration: 180 }}>{active ? <MealCard info={active} overlay /> : null}</DragOverlay>
           </DndContext>
 
-          {nowRecipe && (
+          {nowSlot && (
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-primary bg-card p-4 shadow-card">
               <div className="flex items-center gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
@@ -365,19 +358,16 @@ function PlanPage() {
                     Now cooking · {nowSlot.day} {nowSlot.meal}
                   </p>
                   <p className="font-semibold">
-                    {nowRecipe.name} <span className="text-sm font-normal text-muted-foreground">· {nowRecipe.cook_time} min</span>
+                     {nowRecipe ? <>{nowRecipe.name} <span className="text-sm font-normal text-muted-foreground">· {nowRecipe.cook_time} min</span></> : todayLoading ? "Checking today's meal…" : "No meal planned for today"}
                   </p>
                 </div>
               </div>
-              <Button asChild variant="outline">
+               {nowRecipe && <Button asChild variant="outline">
                 <Link to="/recipes" search={{ recipe: nowRecipe.id }}>View recipe</Link>
-              </Button>
+               </Button>}
             </div>
           )}
 
-          <Button asChild size="lg" className="mt-8 w-full sm:w-auto">
-            <Link to="/grocery"><ShoppingBasket /> Grocery list</Link>
-          </Button>
         </>
       )}
 
