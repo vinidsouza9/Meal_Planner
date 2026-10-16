@@ -244,6 +244,12 @@ function PlanPage() {
 
   const curMobile = shownDays.includes(mobileDay) ? mobileDay : shownDays[0]!;
   const wk = plan?.week_start ?? week!;
+  const nowSlot = currentSlot();
+  const nowInfo =
+    plan && wk === currentWeekStart() && shownDays.includes(nowSlot.day) && shownMeals.includes(nowSlot.meal)
+      ? info(nowSlot.day, nowSlot.meal)
+      : null;
+  const nowRecipe = nowInfo && !nowInfo.empty ? nowInfo.recipe : null;
 
   return (
     <main className="mx-auto max-w-6xl px-5 pt-6">
@@ -347,6 +353,27 @@ function PlanPage() {
 
             <DragOverlay dropAnimation={{ duration: 180 }}>{active ? <MealCard info={active} overlay /> : null}</DragOverlay>
           </DndContext>
+
+          {nowRecipe && (
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-primary bg-card p-4 shadow-card">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
+                  <Flame className="size-5" aria-hidden />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Now cooking · {nowSlot.day} {nowSlot.meal}
+                  </p>
+                  <p className="font-semibold">
+                    {nowRecipe.name} <span className="text-sm font-normal text-muted-foreground">· {nowRecipe.cook_time} min</span>
+                  </p>
+                </div>
+              </div>
+              <Button asChild variant="outline">
+                <Link to="/recipes" search={{ recipe: nowRecipe.id }}>View recipe</Link>
+              </Button>
+            </div>
+          )}
 
           <Button asChild size="lg" className="mt-8 w-full sm:w-auto">
             <Link to="/grocery"><ShoppingBasket /> Grocery list</Link>
