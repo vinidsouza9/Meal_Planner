@@ -12,7 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated/checkin'
+import { Route as AuthenticatedGroceryRouteImport } from './routes/_authenticated/grocery'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
+import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
+import { Route as AuthenticatedPrintRouteImport } from './routes/_authenticated/print'
 import { Route as AuthenticatedRecipesRouteImport } from './routes/_authenticated/recipes'
 import { Route as AuthenticatedWelcomeRouteImport } from './routes/_authenticated/welcome'
 
@@ -30,9 +34,29 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedCheckinRoute = AuthenticatedCheckinRouteImport.update({
+  id: '/checkin',
+  path: '/checkin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedGroceryRoute = AuthenticatedGroceryRouteImport.update({
+  id: '/grocery',
+  path: '/grocery',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedImportRoute = AuthenticatedImportRouteImport.update({
   id: '/import',
   path: '/import',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlanRoute = AuthenticatedPlanRouteImport.update({
+  id: '/plan',
+  path: '/plan',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPrintRoute = AuthenticatedPrintRouteImport.update({
+  id: '/print',
+  path: '/print',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRecipesRoute = AuthenticatedRecipesRouteImport.update({
@@ -49,14 +73,22 @@ const AuthenticatedWelcomeRoute = AuthenticatedWelcomeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/checkin': typeof AuthenticatedCheckinRoute
+  '/grocery': typeof AuthenticatedGroceryRoute
   '/import': typeof AuthenticatedImportRoute
+  '/plan': typeof AuthenticatedPlanRoute
+  '/print': typeof AuthenticatedPrintRoute
   '/recipes': typeof AuthenticatedRecipesRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/checkin': typeof AuthenticatedCheckinRoute
+  '/grocery': typeof AuthenticatedGroceryRoute
   '/import': typeof AuthenticatedImportRoute
+  '/plan': typeof AuthenticatedPlanRoute
+  '/print': typeof AuthenticatedPrintRoute
   '/recipes': typeof AuthenticatedRecipesRoute
   '/welcome': typeof AuthenticatedWelcomeRoute
 }
@@ -65,21 +97,47 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
+  '/_authenticated/grocery': typeof AuthenticatedGroceryRoute
   '/_authenticated/import': typeof AuthenticatedImportRoute
+  '/_authenticated/plan': typeof AuthenticatedPlanRoute
+  '/_authenticated/print': typeof AuthenticatedPrintRoute
   '/_authenticated/recipes': typeof AuthenticatedRecipesRoute
   '/_authenticated/welcome': typeof AuthenticatedWelcomeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/import' | '/recipes' | '/welcome'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/checkin'
+    | '/grocery'
+    | '/import'
+    | '/plan'
+    | '/print'
+    | '/recipes'
+    | '/welcome'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/import' | '/recipes' | '/welcome'
+  to:
+    | '/'
+    | '/auth'
+    | '/checkin'
+    | '/grocery'
+    | '/import'
+    | '/plan'
+    | '/print'
+    | '/recipes'
+    | '/welcome'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/checkin'
+    | '/_authenticated/grocery'
     | '/_authenticated/import'
+    | '/_authenticated/plan'
+    | '/_authenticated/print'
     | '/_authenticated/recipes'
     | '/_authenticated/welcome'
   fileRoutesById: FileRoutesById
@@ -113,11 +171,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/checkin': {
+      id: '/_authenticated/checkin'
+      path: '/checkin'
+      fullPath: '/checkin'
+      preLoaderRoute: typeof AuthenticatedCheckinRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/grocery': {
+      id: '/_authenticated/grocery'
+      path: '/grocery'
+      fullPath: '/grocery'
+      preLoaderRoute: typeof AuthenticatedGroceryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/import': {
       id: '/_authenticated/import'
       path: '/import'
       fullPath: '/import'
       preLoaderRoute: typeof AuthenticatedImportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/plan': {
+      id: '/_authenticated/plan'
+      path: '/plan'
+      fullPath: '/plan'
+      preLoaderRoute: typeof AuthenticatedPlanRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/print': {
+      id: '/_authenticated/print'
+      path: '/print'
+      fullPath: '/print'
+      preLoaderRoute: typeof AuthenticatedPrintRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/recipes': {
@@ -138,13 +224,21 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
+  AuthenticatedGroceryRoute: typeof AuthenticatedGroceryRoute
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
+  AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
+  AuthenticatedPrintRoute: typeof AuthenticatedPrintRoute
   AuthenticatedRecipesRoute: typeof AuthenticatedRecipesRoute
   AuthenticatedWelcomeRoute: typeof AuthenticatedWelcomeRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
+  AuthenticatedGroceryRoute: AuthenticatedGroceryRoute,
   AuthenticatedImportRoute: AuthenticatedImportRoute,
+  AuthenticatedPlanRoute: AuthenticatedPlanRoute,
+  AuthenticatedPrintRoute: AuthenticatedPrintRoute,
   AuthenticatedRecipesRoute: AuthenticatedRecipesRoute,
   AuthenticatedWelcomeRoute: AuthenticatedWelcomeRoute,
 }
