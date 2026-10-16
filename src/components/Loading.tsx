@@ -72,13 +72,14 @@ export function CookingLoader({ task = "other", error, slow, onRetry, onCancel, 
   );
 }
 
-type SlowState = { status: "idle" | "loading" | "error"; error: string | null };
+type SlowState = { status: "idle" | "loading" | "slow" | "error"; error: string | null };
 
 /**
- * Runs a slow action and tracks loading / error / "taking too long" state.
- * The request itself is never aborted — if it finishes after the slow notice, its result still applies.
+ * Runs a slow action and tracks loading / slow / error state.
+ * After SLOW_AFTER_MS the UI shows a "still working" note, not an error — the request
+ * is never aborted, and its result applies whenever it finishes. Only a real failure shows an error.
  */
-export function useSlowAction(slowMessage = "This is taking longer than usual. Please try again.") {
+export function useSlowAction() {
   const [state, setState] = useState<SlowState>({ status: "idle", error: null });
   const last = useRef<(() => Promise<unknown>) | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
