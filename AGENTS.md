@@ -8,3 +8,8 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture
+- AI calls live in `src/lib/ai.functions.ts` (auth-protected server fns) using `src/lib/claude.server.ts`, which streams native /v1/messages, requests strict JSON schema and validates with zod — keeps keys server-side and model output trusted only after validation.
+- Hard plan rules are re-enforced in code after the model answers — the saved plan must always obey them.
+- Grocery list is computed in the browser from plan + recipes (`src/lib/plan.ts`) and cached in `grocery_lists` — deterministic, no AI cost.
