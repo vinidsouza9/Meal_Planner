@@ -1,9 +1,9 @@
 import { pageMeta } from "@/lib/metadata";
 import { Loader2 } from "lucide-react";
 import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Clock, Pencil, Plus, Repeat, Search, Trash2, UtensilsCrossed, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -80,12 +80,13 @@ function RecipesPage() {
   const [editing, setEditing] = useState<{ id?: string; draft: RecipeDraft } | null>(null);
   const [viewing, setViewing] = useState<Recipe | null>(null);
   const search = Route.useSearch();
-  useEffect(() => {
-    if (search.recipe && !viewing) {
-      const r = recipes.find((x) => x.id === search.recipe);
-      if (r) setViewing(r);
-    }
-  }, [search.recipe, recipes, viewing]);
+  const navigate = useNavigate({ from: Route.fullPath });
+  const paramRecipe = search.recipe ? (recipes.find((x) => x.id === search.recipe) ?? null) : null;
+  const shown = viewing ?? paramRecipe;
+  const closeViewing = () => {
+    setViewing(null);
+    if (search.recipe) navigate({ search: { recipe: undefined }, replace: true });
+  };
   const [deleting, setDeleting] = useState<Recipe | null>(null);
 
   const filtered = useMemo(() => {
@@ -257,41 +258,29 @@ function RecipesPage() {
           </ul>
         )}
 
-        <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <Dialog open={!!shown} onOpenChange={(o) => !o && closeViewing()}>
           <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl p-0">
             <DialogHeader className="border-b p-5 text-left">
-              <DialogTitle className="font-display text-2xl">{viewing?.name}</DialogTitle>
+              <DialogTitle className="font-display text-2xl">{shown?.name}</DialogTitle>
               <DialogDescription className="capitalize">
-                {viewing?.cook_time} min · {viewing?.meal_types.join(" · ")}
-                {viewing?.is_quick ? " · quick" : ""}
+                {shown?.cook_time} min · {shown?.meal_types.join(" · ")}
+                {shown?.is_quick ? " · quick" : ""}
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto overscroll-contain p-5">
-              {viewing?.imageSrc && <img src={viewing.imageSrc} alt={viewing.name} className="mb-4 aspect-[4/3] w-full rounded-xl object-cover" />}
+              {shown?.imageSrc && <img src={shown.imageSrc} alt={shown.name} className="mb-4 aspect-[4/3] w-full rounded-xl object-cover" />}
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
                 <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {viewing?.ingredients.map((i) => <li key={i}>{i}</li>)}
+                  {shown?.ingredients.map((i) => <li key={i}>{i}</li>)}
                 </ul>
               </section>
-              {viewing?.steps && (
+              {shown?.steps && (
                 <section className="mt-4">
                   <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Steps</h3>
-                  <p className="mt-2 whitespace-pre-line text-sm">{viewing.steps}</p>
+                  <p className="mt-2 whitespace-pre-line text-sm">{shown.steps}</p>
                 </section>
               )}
-            </div>
-            <div className="border-t p-4">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  if (viewing) setEditing({ id: viewing.id, draft: toDraft(viewing) });
-                  setViewing(null);
-                }}
-              >
-                <Pencil /> Edit
-              </Button>
             </div>
           </DialogContent>
         </Dialog>
