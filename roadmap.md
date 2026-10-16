@@ -1,6 +1,6 @@
 # Roadmap
 
-- [x] Keep Now cooking visible with today's actual plan and move Grocery list to top-right planner actions; verified signed-in and meal-time tests pass.
+- [x] Cooking summary matches the displayed calendar: breakfast before 11, lunch until 4, dinner afterward; only dish name, time, recipe link. Verified Green Chicken dinner and recipe opening; Grocery list stays top-right.
 
 - [x] 1–6 attached updates: multi-meal recipes, single-page Plan my week, pastel planner, restrained print, unique saved weeks
 - [x] 7–11 attached updates: required signup names, account page, avatar, personalized header, Vineeta account
