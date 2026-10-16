@@ -14,7 +14,157 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      check_ins: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          user_id?: string
+          week_start: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
+      grocery_lists: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          plan_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          plan_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          plan_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grocery_lists_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: true
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          check_in_id: string | null
+          created_at: string
+          id: string
+          locked: Json
+          plan_json: Json
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          check_in_id?: string | null
+          created_at?: string
+          id?: string
+          locked?: Json
+          plan_json: Json
+          user_id?: string
+          week_start: string
+        }
+        Update: {
+          check_in_id?: string | null
+          created_at?: string
+          id?: string
+          locked?: Json
+          plan_json?: Json
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plans_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "check_ins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          household_size: number
+          id: string
+          onboarded: boolean
+        }
+        Insert: {
+          created_at?: string
+          household_size?: number
+          id: string
+          onboarded?: boolean
+        }
+        Update: {
+          created_at?: string
+          household_size?: number
+          id?: string
+          onboarded?: boolean
+        }
+        Relationships: []
+      }
+      recipes: {
+        Row: {
+          can_repeat: boolean
+          cook_time: number
+          created_at: string
+          id: string
+          ingredients: string[]
+          is_quick: boolean
+          name: string
+          steps: string | null
+          user_id: string
+        }
+        Insert: {
+          can_repeat?: boolean
+          cook_time?: number
+          created_at?: string
+          id?: string
+          ingredients?: string[]
+          is_quick?: boolean
+          name: string
+          steps?: string | null
+          user_id?: string
+        }
+        Update: {
+          can_repeat?: boolean
+          cook_time?: number
+          created_at?: string
+          id?: string
+          ingredients?: string[]
+          is_quick?: boolean
+          name?: string
+          steps?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
