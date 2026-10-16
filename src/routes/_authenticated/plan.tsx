@@ -20,6 +20,7 @@ import { ChevronLeft, ChevronRight, Clock, GripVertical, Lock, Printer, RefreshC
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ShareMenu } from "@/components/ShareMenu";
 import { CookingLoader, PlanGridSkeleton, useSlowAction } from "@/components/Loading";
 import { supabase } from "@/integrations/supabase/client";
@@ -119,6 +120,7 @@ function PlanPage() {
   const [active, setActive] = useState<CellInfo | null>(null);
   const [mobileDay, setMobileDay] = useState<Day>("Mon");
   const [nowSlot, setNowSlot] = useState<ReturnType<typeof currentCookingSlot> | null>(null);
+  const [showRecipe, setShowRecipe] = useState(false);
   useEffect(() => {
     const update = () => setNowSlot(currentCookingSlot());
     update();
@@ -349,9 +351,7 @@ function PlanPage() {
                 <p className="mt-1 font-semibold">{nowRecipe?.name ?? "No meal planned"}</p>
                 {nowRecipe && <p className="mt-1 text-sm text-muted-foreground">{nowRecipe.cook_time} min</p>}
               </div>
-               {nowRecipe && <Button asChild variant="outline">
-                <Link to="/recipes" search={{ recipe: nowRecipe.id }}>View recipe</Link>
-               </Button>}
+               {nowRecipe && <Button variant="outline" onClick={() => setShowRecipe(true)}>View recipe</Button>}
             </section>
           )}
 
@@ -381,6 +381,32 @@ function PlanPage() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <Sheet open={showRecipe} onOpenChange={setShowRecipe}>
+        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+          <SheetHeader className="border-b p-5 text-left">
+            <SheetTitle className="font-display text-2xl">{nowRecipe?.name}</SheetTitle>
+            <SheetDescription className="capitalize">
+              {nowRecipe?.cook_time} min{nowSlot ? ` · ${nowSlot.meal}` : ""}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto overscroll-contain p-5">
+            {nowRecipe?.imageSrc && <img src={nowRecipe.imageSrc} alt={nowRecipe.name} className="mb-4 aspect-[4/3] w-full rounded-xl object-cover" />}
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {nowRecipe?.ingredients.map((i) => <li key={i}>{i}</li>)}
+              </ul>
+            </section>
+            {nowRecipe?.steps && (
+              <section className="mt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Steps</h3>
+                <p className="mt-2 whitespace-pre-line text-sm">{nowRecipe.steps}</p>
+              </section>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </main>
   );
 }
