@@ -39,7 +39,7 @@ function Account() {
     if (!profile || !editor) return;
     const bucket = supabase.storage.from('avatars');
     const uploaded: string[] = [];
-    async function upload(file: Blob) { const path = `${profile?.id}/${crypto.randomUUID()}.jpg`; const { error } = await bucket.upload(path, file, { contentType: 'image/jpeg' }); if (error) throw new Error("Couldn't upload the photo."); uploaded.push(path); return path; }
+    async function upload(file: Blob) { const contentType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'; const path = `${profile?.id}/${crypto.randomUUID()}.${contentType === 'image/png' ? 'png' : 'jpg'}`; const { error } = await bucket.upload(path, file, { contentType }); if (error) throw new Error("Couldn't upload the photo."); uploaded.push(path); return path; }
     try {
       const avatar_url = await upload(blob);
       const original_avatar_url = editor.original ? await upload(editor.original) : profile.original_avatar_url || profile.avatar_url;

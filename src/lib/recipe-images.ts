@@ -4,8 +4,9 @@ const BUCKET = "recipe-images";
 
 /** Upload a resized image blob; returns the storage path to save on the recipe row. */
 export async function uploadRecipeImage(blob: Blob, userId: string): Promise<string> {
-  const path = `${userId}/${crypto.randomUUID()}.jpg`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType: "image/jpeg" });
+  const contentType = blob.type === "image/png" ? "image/png" : "image/jpeg";
+  const path = `${userId}/${crypto.randomUUID()}.${contentType === "image/png" ? "png" : "jpg"}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(path, blob, { contentType });
   if (error) throw new Error("Couldn't upload the photo.");
   return path;
 }
