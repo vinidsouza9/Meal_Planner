@@ -51,8 +51,8 @@ const toDraft = (r: Recipe): RecipeDraft => ({
   is_quick: r.is_quick,
   can_repeat: r.can_repeat,
   meal_types: r.meal_types,
-  original_image_url: r.original_image_url,
-  image_crop: r.image_crop,
+  original_image_url: r.original_image_url ?? null,
+  image_crop: r.image_crop ?? null,
   image_url: r.image_url ?? null,
   photoPreview: r.imageSrc ?? null,
 });

@@ -1,5 +1,5 @@
 /** Resize an image file in the browser to at most `maxW` px wide, returned as base64 JPEG (no data: prefix). */
-export async function resizeImage(file: File, maxW = 1600): Promise<{ mediaType: "image/jpeg"; data: string; preview: string }> {
+export async function resizeImage(file: File | Blob, maxW = 1600): Promise<{ mediaType: "image/jpeg"; data: string; preview: string }> {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -12,9 +12,13 @@ export async function resizeImage(file: File, maxW = 1600): Promise<{ mediaType:
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(img.naturalWidth * scale);
     canvas.height = Math.round(img.naturalHeight * scale);
-    canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Image resizing is unavailable.");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    return { mediaType: "image/jpeg", data: dataUrl.split(",")[1]!, preview: dataUrl };
+    const data = dataUrl.split(",")[1];
+    if (!data) throw new Error("Image resizing failed.");
+    return { mediaType: "image/jpeg", data, preview: dataUrl };
   } finally {
     URL.revokeObjectURL(url);
   }

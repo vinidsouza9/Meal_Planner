@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PhotoEditor } from "@/components/PhotoEditor";
 import { Button } from "@/components/ui/button";
 import { readablePhoto, type PhotoCrop } from "@/lib/photo-crop";
@@ -45,6 +45,9 @@ export const emptyDraft = (): RecipeDraft => ({
 
 function RecipePhotoField({ value, onChange, idPrefix }: { value: RecipeDraft; onChange: (v: RecipeDraft) => void; idPrefix: string }) {
   const [editor, setEditor] = useState<{ src: string; original?: Blob; crop?: PhotoCrop | null } | null>(null);
+  useEffect(() => {
+    if (value.originalBlob && !value.photoBlob && !value.removePhoto) setEditor({ src: URL.createObjectURL(value.originalBlob), original: value.originalBlob });
+  }, [value.originalBlob]);
   const preview = value.removePhoto ? null : (value.photoPreview ?? null);
 
   async function pick(files: FileList | null) {
@@ -63,20 +66,20 @@ function RecipePhotoField({ value, onChange, idPrefix }: { value: RecipeDraft; o
   }
 
   async function adjust() {
-    if (value.originalBlob) { setEditor({ src: URL.createObjectURL(value.originalBlob), original: value.originalBlob, crop: value.image_crop }); return; }
+    if (value.originalBlob) { setEditor({ src: URL.createObjectURL(value.originalBlob), original: value.originalBlob, crop: value.image_crop ?? null }); return; }
     const path = value.original_image_url || value.image_url;
     if (!path) return;
     const signed = await signImagePaths([path]);
     const src = signed.get(path);
     if (!src) { toast.error("Couldn't open the original photo."); return; }
-    setEditor({ src, crop: value.image_crop });
+    setEditor({ src, crop: value.image_crop ?? null });
   }
   function closeEditor() { if (editor?.src.startsWith("blob:")) URL.revokeObjectURL(editor.src); setEditor(null); }
   return (
     <div className="space-y-2">
-      {editor && <PhotoEditor src={editor.src} kind="recipe" initial={editor.crop} onCancel={closeEditor} onSave={(blob, crop) => {
+      {editor && <PhotoEditor src={editor.src} kind="recipe" initial={editor.crop ?? null} onCancel={() => { if (value.originalBlob && !value.photoBlob) onChange({ ...value, originalBlob: null, photoPreview: null }); closeEditor(); }} onSave={(blob, crop) => {
         const reader = new FileReader();
-        reader.onload = () => { onChange({ ...value, photoBlob: blob, photoPreview: String(reader.result), originalBlob: editor.original ?? value.originalBlob, image_crop: crop, removePhoto: false }); closeEditor(); };
+        reader.onload = () => { onChange({ ...value, photoBlob: blob, photoPreview: String(reader.result), originalBlob: editor.original ?? value.originalBlob ?? null, image_crop: crop, removePhoto: false }); closeEditor(); };
         reader.readAsDataURL(blob);
       }} />}
       <Label>Recipe photo</Label>

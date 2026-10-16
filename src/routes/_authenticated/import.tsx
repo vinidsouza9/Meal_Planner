@@ -1,3 +1,4 @@
+import { readablePhoto } from "@/lib/photo-crop";
 import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { parseRecipePhotosWithAI, parseRecipesWithAI } from "@/lib/ai.functions";
-import { base64ToBlob, resizeImage } from "@/lib/image-resize";
+import { resizeImage } from "@/lib/image-resize";
 import { prepareRecipePhoto } from "@/lib/recipe-images";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/import")({
 function ImportPage() {
   const parse = useServerFn(parseRecipesWithAI);
   const parsePhotos = useServerFn(parseRecipePhotosWithAI);
-  const [photos, setPhotos] = useState<{ mediaType: "image/jpeg"; data: string; preview: string }[]>([]);
+  const [photos, setPhotos] = useState<{ mediaType: "image/jpeg"; data: string; preview: string; original: Blob }[]>([]);
   const [photoErr, setPhotoErr] = useState<string | null>(null);
 
   async function addFiles(files: FileList | null) {
@@ -41,7 +42,8 @@ function ImportPage() {
         continue;
       }
       try {
-        out.push(await resizeImage(f));
+        const original = await readablePhoto(f);
+        out.push({ ...await resizeImage(original), original });
       } catch {
         setPhotoErr(/heic|heif/i.test(f.type + f.name) ? "This device can't open HEIC photos. Try a JPG or PNG instead." : "We couldn't open that photo.");
       }
@@ -53,7 +55,7 @@ function ImportPage() {
     setPhotoErr(null);
     await slow.run(async () => {
       const out = await parsePhotos({ data: { images: photos.map(({ mediaType, data }) => ({ mediaType, data })) } });
-      setDrafts(out.map((r, i) => ({ ...r, can_repeat: false, image_url: null, ...(i === 0 && usePhoto && photos[0] ? { originalBlob: base64ToBlob(photos[0].data), photoPreview: photos[0].preview } : {}) })));
+      setDrafts(out.map((r, i) => ({ ...r, can_repeat: false, image_url: null, ...(i === 0 && usePhoto && photos[0] ? { originalBlob: photos[0].original, photoPreview: photos[0].preview } : {}) })));
     });
   }
   const navigate = useNavigate();
@@ -113,7 +115,7 @@ function ImportPage() {
         {photos.length > 0 && (
           <label className="surface mt-4 flex min-h-12 items-center justify-between gap-3 px-4">
             <span className="text-sm font-medium">Use this photo as the recipe picture</span>
-            <Switch checked={usePhoto} onCheckedChange={(checked) => { setUsePhoto(checked); setDrafts(drafts.map((d, i) => i === 0 ? { ...d, originalBlob: checked && photos[0] ? base64ToBlob(photos[0].data) : null, photoBlob: null, photoPreview: checked ? photos[0]?.preview : null } : d)); }} />
+            <Switch checked={usePhoto} onCheckedChange={(checked) => { setUsePhoto(checked); setDrafts(drafts.map((d, i) => i === 0 ? { ...d, originalBlob: checked && photos[0] ? photos[0].original : null, photoBlob: null, photoPreview: checked ? photos[0]?.preview ?? null : null } : d)); }} />
           </label>
         )}
         <div className="mt-6 space-y-4">

@@ -94,7 +94,7 @@ function Layout() {
             </nav>
 
             <div className="flex items-center gap-2">
-              <UserMenu email={profile?.email ?? ""} firstName={profile?.first_name ?? ""} avatar={profile?.avatarSrc} />
+              <UserMenu email={profile?.email ?? ""} firstName={profile?.first_name ?? ""} avatar={profile?.avatarSrc ?? null} />
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
                   <button className="grid size-11 place-items-center rounded-xl text-foreground hover:bg-muted md:hidden" aria-label="Open menu">
@@ -127,7 +127,7 @@ function Layout() {
           </div>
         </header>
       )}
-      {!bare && profile && !profile.first_name && <div className="mx-auto max-w-6xl px-5 py-3 text-sm"><Link to="/account" className="text-primary underline">Add your name to personalize your account.</Link></div>}
+      {!bare && profile && (!profile.first_name || !profile.last_name) && <div className="mx-auto max-w-6xl px-5 py-3 text-sm"><Link to="/account" className="text-primary underline">Add your name to personalize your account.</Link></div>}
       <Outlet />
     </div>
   );

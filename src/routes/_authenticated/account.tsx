@@ -85,6 +85,6 @@ function Account() {
     <form onSubmit={save} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="account-first">First name</Label><Input id="account-first" required maxLength={100} autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="account-last">Last name</Label><Input id="account-last" required maxLength={100} autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)} /></div></div>
     <div className="space-y-2"><Label htmlFor="account-email">Email</Label><Input id="account-email" readOnly value={profile.email} /><p className="text-sm text-muted-foreground">Email can't be changed.</p></div><LoadingButton type="submit" loading={busy} loadingText="Saving...">Save</LoadingButton></form>
     <section className="border-t pt-6"><LoadingButton variant="outline" onClick={reset} loading={resetBusy} loadingText="Sending...">Send password reset email</LoadingButton></section>
-    {editor && <PhotoEditor src={editor.src} kind="avatar" initial={editor.crop} onSave={savePhoto} onCancel={close} />}
+    {editor && <PhotoEditor src={editor.src} kind="avatar" initial={editor.crop ?? null} onSave={savePhoto} onCancel={close} />}
   </main>;
 }
