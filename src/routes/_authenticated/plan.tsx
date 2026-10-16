@@ -54,7 +54,10 @@ function PlanPage() {
     const k = cellKey(sel.day, sel.meal);
     const locked = selLocked ? plan.locked.filter((x) => x !== k) : [...plan.locked, k];
     const { error } = await supabase.from("plans").update({ locked }).eq("id", plan.id);
-    if (error) return toast.error("Couldn't update.");
+    if (error) {
+      toast.error("Couldn't update.");
+      return;
+    }
     qc.invalidateQueries({ queryKey: ["plan"] });
     setSel(null);
   }

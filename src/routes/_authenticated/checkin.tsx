@@ -60,7 +60,7 @@ function CheckIn() {
         <div className="flex flex-wrap gap-2">
           {MEALS.map((m) => (
             <Chip key={m} on={a.meals.includes(m)} onClick={() => setA({ ...a, meals: toggle(a.meals, m) })}>
-              {m[0].toUpperCase() + m.slice(1)}
+              {m.charAt(0).toUpperCase() + m.slice(1)}
             </Chip>
           ))}
         </div>
@@ -146,10 +146,13 @@ function CheckIn() {
     },
   ];
   const last = step === steps.length - 1;
-  const s = steps[step];
+  const s = steps[step]!;
 
   async function finish() {
-    if (!a.meals.length) return toast.error("Pick at least one meal.");
+    if (!a.meals.length) {
+      toast.error("Pick at least one meal.");
+      return;
+    }
     setBusy(true);
     try {
       const answers = { ...a, busyDays: a.busyDays.filter((d) => days.includes(d)), noCookDays: a.noCookDays.filter((d) => days.includes(d)) };
