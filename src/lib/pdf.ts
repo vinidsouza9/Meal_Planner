@@ -113,8 +113,8 @@ export function buildGroceryPdf(items: GroceryItem[], weekStart: string, people:
   header(d, "Grocery list", `Week of ${weekRangeLabel(weekStart)} · for ${people} ${people === 1 ? "person" : "people"}`);
 
   const colW = (W - 64 - 24) / 2;
-  const colX = [32, 32 + colW + 24];
-  const colY = [116, 116];
+  const colX: [number, number] = [32, 32 + colW + 24];
+  const colY: [number, number] = [116, 116];
 
   const unchecked = items.filter((i) => !i.checked);
   const list = unchecked.length ? unchecked : items;
