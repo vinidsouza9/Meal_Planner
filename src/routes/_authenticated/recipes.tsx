@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Clock, Pencil, Plus, Repeat, Search, Trash2, Zap } from "lucide-react";
+import { Clock, Pencil, Plus, Repeat, Search, Trash2, UtensilsCrossed, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { RecipeFields, cleanDraft, emptyDraft, type RecipeDraft } from "@/components/RecipeFields";
+import { removeRecipeImage, uploadRecipeImage } from "@/lib/recipe-images";
 import type { MealType, Recipe } from "@/lib/plan";
 import { allRecipesQuery } from "@/lib/queries";
 
@@ -38,12 +39,6 @@ const TYPE_CHIPS: { v: "all" | Exclude<MealType, "any">; l: string }[] = [
   { v: "lunch", l: "Lunch" },
   { v: "dinner", l: "Dinner" },
 ];
-const TYPE_TAG: Record<MealType, string> = {
-  breakfast: "bg-breakfast-soft text-breakfast",
-  lunch: "bg-lunch-soft text-lunch",
-  dinner: "bg-dinner-soft text-dinner",
-  any: "bg-muted text-muted-foreground",
-};
 
 const toDraft = (r: Recipe): RecipeDraft => ({
   name: r.name,
@@ -53,7 +48,36 @@ const toDraft = (r: Recipe): RecipeDraft => ({
   is_quick: r.is_quick,
   can_repeat: r.can_repeat,
   meal_type: r.meal_type ?? "any",
+  image_url: r.image_url ?? null,
+  photoPreview: r.imageSrc ?? null,
 });
+
+function RecipeImage({ src, name }: { src?: string | null; name: string }) {
+  if (!src) {
+    return (
+      <div className="grid aspect-[2/1] w-full place-items-center rounded-t-2xl bg-muted text-muted-foreground/60">
+        <UtensilsCrossed className="size-8" aria-hidden />
+      </div>
+    );
+  }
+  return <img src={src} alt={name} className="aspect-[2/1] w-full rounded-t-2xl object-cover" />;
+}
+
+/** Upload/remove the photo for a draft and return the image_url to save. */
+async function resolveImage(draft: RecipeDraft, previousPath: string | null): Promise<string | null> {
+  if (draft.photoBlob) {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) throw new Error("Not signed in");
+    const path = await uploadRecipeImage(draft.photoBlob, data.user.id);
+    if (previousPath && previousPath !== path) await removeRecipeImage(previousPath);
+    return path;
+  }
+  if (draft.removePhoto && previousPath) {
+    await removeRecipeImage(previousPath);
+    return null;
+  }
+  return previousPath;
+}
 
 function RecipesPage() {
   const qc = useQueryClient();
@@ -95,7 +119,11 @@ function RecipesPage() {
       if (!editing) return;
       const row = cleanDraft(editing.draft);
       if (!row.name) throw new Error("Give the recipe a name");
-      const { error } = editing.id ? await supabase.from("recipes").update(row).eq("id", editing.id) : await supabase.from("recipes").insert(row);
+      const prevPath = editing.id ? (recipes.find((r) => r.id === editing.id)?.image_url ?? null) : null;
+      const image_url = await resolveImage(editing.draft, prevPath);
+      const { error } = editing.id
+        ? await supabase.from("recipes").update({ ...row, image_url }).eq("id", editing.id)
+        : await supabase.from("recipes").insert({ ...row, image_url });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -107,9 +135,10 @@ function RecipesPage() {
   });
 
   const del = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("recipes").delete().eq("id", id);
+    mutationFn: async (r: Recipe) => {
+      const { error } = await supabase.from("recipes").delete().eq("id", r.id);
       if (error) throw error;
+      if (r.image_url) await removeRecipeImage(r.image_url);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["recipes"] });
@@ -198,26 +227,29 @@ function RecipesPage() {
         ) : (
           <ul className="mt-5 grid gap-3 sm:grid-cols-2">
             {filtered.map((r) => (
-              <li key={r.id} className="surface relative flex transition-colors hover:border-primary/40">
-                <button onClick={() => setViewing(r)} className="min-w-0 flex-1 p-4 text-left" aria-label={`View ${r.name}`}>
-                  <p className="pr-2 font-semibold">{r.name}</p>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1"><Clock className="size-3" />{r.cook_time} min</span>
-                    <span className={`rounded-full px-2.5 py-1 capitalize ${TYPE_TAG[r.meal_type ?? "any"]}`}>{r.meal_type === "any" ? "Any meal" : r.meal_type}</span>
-                    {r.is_quick && <span className="inline-flex items-center gap-1 rounded-full bg-amber-soft px-2.5 py-1 text-amber-foreground"><Zap className="size-3" />Quick</span>}
-                    {r.can_repeat && <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground"><Repeat className="size-3" />Weekly</span>}
+              <li key={r.id} className="surface relative flex flex-col overflow-hidden transition-colors hover:border-primary/40">
+                <button onClick={() => setViewing(r)} className="min-w-0 flex-1 text-left" aria-label={`View ${r.name}`}>
+                  <RecipeImage src={r.imageSrc} name={r.name} />
+                  <div className="p-4">
+                    <p className="pr-2 font-semibold">{r.name}</p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
+                      <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Clock className="size-3" />{r.cook_time} min</span>
+                      <span className="rounded-full border px-2.5 py-1 capitalize text-muted-foreground">{r.meal_type === "any" ? "Any meal" : r.meal_type}</span>
+                      {r.is_quick && <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Zap className="size-3" />Quick</span>}
+                      {r.can_repeat && <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Repeat className="size-3" />Weekly</span>}
+                    </div>
                   </div>
                 </button>
-                <div className="flex flex-col gap-1 p-2">
+                <div className="absolute right-2 top-2 flex gap-1">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label={`Edit ${r.name}`} onClick={() => setEditing({ id: r.id, draft: toDraft(r) })}><Pencil /></Button>
+                      <Button variant="secondary" size="icon" aria-label={`Edit ${r.name}`} onClick={() => setEditing({ id: r.id, draft: toDraft(r) })}><Pencil /></Button>
                     </TooltipTrigger>
                     <TooltipContent>Edit</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive" aria-label={`Delete ${r.name}`} onClick={() => setDeleting(r)}><Trash2 /></Button>
+                      <Button variant="secondary" size="icon" className="text-destructive" aria-label={`Delete ${r.name}`} onClick={() => setDeleting(r)}><Trash2 /></Button>
                     </TooltipTrigger>
                     <TooltipContent>Delete</TooltipContent>
                   </Tooltip>
@@ -228,29 +260,33 @@ function RecipesPage() {
         )}
 
         <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl">
-            <DialogHeader>
+          <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl p-0">
+            <DialogHeader className="border-b p-5 text-left">
               <DialogTitle className="font-display text-2xl">{viewing?.name}</DialogTitle>
               <DialogDescription className="capitalize">
                 {viewing?.cook_time} min · {viewing?.meal_type === "any" ? "any meal" : viewing?.meal_type}
                 {viewing?.is_quick ? " · quick" : ""}
               </DialogDescription>
             </DialogHeader>
-            <section>
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5">
-                {viewing?.ingredients.map((i) => <li key={i}>{i}</li>)}
-              </ul>
-            </section>
-            {viewing?.steps && (
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5">
+              {viewing?.imageSrc && <img src={viewing.imageSrc} alt={viewing.name} className="mb-4 aspect-video w-full rounded-xl object-cover" />}
               <section>
-                <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Steps</h3>
-                <p className="mt-2 whitespace-pre-line text-sm">{viewing.steps}</p>
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {viewing?.ingredients.map((i) => <li key={i}>{i}</li>)}
+                </ul>
               </section>
-            )}
-            <DialogFooter>
+              {viewing?.steps && (
+                <section className="mt-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Steps</h3>
+                  <p className="mt-2 whitespace-pre-line text-sm">{viewing.steps}</p>
+                </section>
+              )}
+            </div>
+            <div className="border-t p-4">
               <Button
                 variant="outline"
+                className="w-full"
                 onClick={() => {
                   if (viewing) setEditing({ id: viewing.id, draft: toDraft(viewing) });
                   setViewing(null);
@@ -258,19 +294,21 @@ function RecipesPage() {
               >
                 <Pencil /> Edit
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 
         <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl">
-            <DialogHeader>
+          <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl p-0">
+            <DialogHeader className="border-b p-5 text-left">
               <DialogTitle>{editing?.id ? "Edit recipe" : "New recipe"}</DialogTitle>
             </DialogHeader>
-            {editing && <RecipeFields value={editing.draft} onChange={(d) => setEditing({ ...editing, draft: d })} />}
-            <DialogFooter>
-              <Button onClick={() => save.mutate()} disabled={save.isPending}>Save recipe</Button>
-            </DialogFooter>
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5">
+              {editing && <RecipeFields value={editing.draft} onChange={(d) => setEditing({ ...editing, draft: d })} />}
+            </div>
+            <div className="border-t p-4">
+              <Button className="w-full" onClick={() => save.mutate()} disabled={save.isPending}>Save recipe</Button>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -286,7 +324,7 @@ function RecipesPage() {
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={(e) => {
                   e.preventDefault();
-                  if (deleting) del.mutate(deleting.id);
+                  if (deleting) del.mutate(deleting);
                 }}
               >
                 Delete
