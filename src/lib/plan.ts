@@ -27,6 +27,9 @@ export type Recipe = {
   is_quick: boolean;
   can_repeat: boolean;
   meal_type: MealType;
+  image_url: string | null;
+  /** Signed URL for image_url, filled in by queries. */
+  imageSrc?: string | null;
 };
 
 export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "any"] as const;
