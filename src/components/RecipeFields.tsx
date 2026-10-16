@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { MEAL_TYPES, type MealType } from "@/lib/plan";
 
 export type RecipeDraft = {
   name: string;
@@ -10,6 +11,7 @@ export type RecipeDraft = {
   cook_time: number;
   is_quick: boolean;
   can_repeat: boolean;
+  meal_type: MealType;
 };
 
 export const emptyDraft = (): RecipeDraft => ({
@@ -19,6 +21,7 @@ export const emptyDraft = (): RecipeDraft => ({
   cook_time: 30,
   is_quick: false,
   can_repeat: false,
+  meal_type: "any",
 });
 
 export function RecipeFields({ value, onChange, idPrefix = "r" }: { value: RecipeDraft; onChange: (v: RecipeDraft) => void; idPrefix?: string }) {
@@ -27,8 +30,18 @@ export function RecipeFields({ value, onChange, idPrefix = "r" }: { value: Recip
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor={`${idPrefix}-name`}>Name</Label>
-        <Input id={`${idPrefix}-name`} value={value.name} onChange={(e) => set("name", e.target.value)} className="h-12 rounded-xl" />
+        <Input id={`${idPrefix}-name`} value={value.name} onChange={(e) => set("name", e.target.value)} className="h-12 rounded-xl" placeholder="e.g. Chicken stir fry" />
       </div>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Meal type</legend>
+        <div className="flex flex-wrap gap-2">
+          {MEAL_TYPES.map((m) => (
+            <button key={m} type="button" className="chip capitalize" data-on={value.meal_type === m} aria-pressed={value.meal_type === m} onClick={() => set("meal_type", m)}>
+              {m}
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <div className="space-y-2">
         <Label htmlFor={`${idPrefix}-ing`}>Ingredients (one per line)</Label>
         <Textarea
@@ -80,5 +93,6 @@ export function cleanDraft(d: RecipeDraft) {
     cook_time: Math.max(0, Math.round(d.cook_time)),
     is_quick: d.cook_time <= 20 && d.is_quick,
     can_repeat: d.can_repeat,
+    meal_type: d.meal_type,
   };
 }
