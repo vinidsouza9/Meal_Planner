@@ -52,7 +52,7 @@ function ImportPage() {
     setPhotoErr(null);
     try {
       const out = await parsePhotos({ data: { images: photos.map(({ mediaType, data }) => ({ mediaType, data })) } });
-      setDrafts(out.map((r) => ({ ...r, can_repeat: false })));
+      setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
     } catch (e) {
       setPhotoErr(e instanceof Error ? e.message : "We couldn't read that photo. Please try another.");
     } finally {
@@ -71,7 +71,7 @@ function ImportPage() {
     try {
       const out = await parse({ data: { text } });
       if (!out.length) toast.error("No recipes found in that text.");
-      else setDrafts(out.map((r) => ({ ...r, can_repeat: false })));
+      else setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "AI request failed");
     } finally {
