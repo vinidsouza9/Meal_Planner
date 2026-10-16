@@ -93,7 +93,7 @@ export function useSlowAction() {
     setState({ status: "loading", error: null });
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      if (runId.current === id) setState({ status: "error", error: slowMessage });
+      if (runId.current === id) setState({ status: "slow", error: null });
     }, SLOW_AFTER_MS);
     try {
       const out = await fn();
@@ -105,7 +105,7 @@ export function useSlowAction() {
     } finally {
       if (runId.current === id && timer.current) clearTimeout(timer.current);
     }
-  }, [slowMessage]);
+  }, []);
 
   const retry = useCallback(() => { if (last.current) void run(last.current); }, [run]);
   const reset = useCallback(() => { runId.current++; setState({ status: "idle", error: null }); }, []);
