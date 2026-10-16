@@ -258,27 +258,27 @@ function RecipesPage() {
           </ul>
         )}
 
-        <Dialog open={!!viewing} onOpenChange={(o) => !o && closeViewing()}>
+        <Dialog open={!!shown} onOpenChange={(o) => !o && closeViewing()}>
           <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl p-0">
             <DialogHeader className="border-b p-5 text-left">
-              <DialogTitle className="font-display text-2xl">{viewing?.name}</DialogTitle>
+              <DialogTitle className="font-display text-2xl">{shown?.name}</DialogTitle>
               <DialogDescription className="capitalize">
-                {viewing?.cook_time} min · {viewing?.meal_types.join(" · ")}
-                {viewing?.is_quick ? " · quick" : ""}
+                {shown?.cook_time} min · {shown?.meal_types.join(" · ")}
+                {shown?.is_quick ? " · quick" : ""}
               </DialogDescription>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto overscroll-contain p-5">
-              {viewing?.imageSrc && <img src={viewing.imageSrc} alt={viewing.name} className="mb-4 aspect-[4/3] w-full rounded-xl object-cover" />}
+              {shown?.imageSrc && <img src={shown.imageSrc} alt={shown.name} className="mb-4 aspect-[4/3] w-full rounded-xl object-cover" />}
               <section>
                 <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
                 <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {viewing?.ingredients.map((i) => <li key={i}>{i}</li>)}
+                  {shown?.ingredients.map((i) => <li key={i}>{i}</li>)}
                 </ul>
               </section>
-              {viewing?.steps && (
+              {shown?.steps && (
                 <section className="mt-4">
                   <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Steps</h3>
-                  <p className="mt-2 whitespace-pre-line text-sm">{viewing.steps}</p>
+                  <p className="mt-2 whitespace-pre-line text-sm">{shown.steps}</p>
                 </section>
               )}
             </div>
