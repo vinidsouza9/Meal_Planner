@@ -10,7 +10,7 @@ import { AISLES, buildGrocery, type GroceryItem } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/grocery")({
-  head: () => ({ meta: [{ title: "Grocery list — Weeknight" }] }),
+  head: () => ({ meta: [{ title: "Grocery list — Meal Planner" }] }),
   component: GroceryPage,
 });
 

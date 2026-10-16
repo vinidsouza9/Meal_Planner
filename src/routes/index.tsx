@@ -7,9 +7,9 @@ import { CalendarDays, ShoppingBasket, Sparkles } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Weeknight — calm weekly meal planning" },
-      { name: "description", content: "Weeknight plans your household's week from your own recipes, then writes the grocery list." },
-      { property: "og:title", content: "Weeknight — calm weekly meal planning" },
+      { title: "Meal Planner — calm weekly meal planning" },
+      { name: "description", content: "Meal Planner plans your household's week from your own recipes, then writes the grocery list." },
+      { property: "og:title", content: "Meal Planner — calm weekly meal planning" },
       { property: "og:description", content: "Plan the week from your own recipes, then get a grocery list grouped by aisle." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -33,7 +33,7 @@ function Index() {
   ];
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-      <p className="text-sm font-semibold uppercase tracking-widest text-primary">Weeknight</p>
+      <p className="text-sm font-semibold uppercase tracking-widest text-primary">Meal Planner</p>
       <h1 className="mt-3 font-display text-5xl leading-tight text-foreground">Dinner, decided.</h1>
       <p className="mt-4 text-lg text-muted-foreground">
         A quiet weekly meal planner for your household, built from the recipes you already cook.

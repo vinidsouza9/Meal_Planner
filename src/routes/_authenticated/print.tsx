@@ -6,7 +6,7 @@ import { DAYS, MEALS } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/print")({
-  head: () => ({ meta: [{ title: "Print plan — Weeknight" }] }),
+  head: () => ({ meta: [{ title: "Print plan — Meal Planner" }] }),
   component: PrintPage,
 });
 
@@ -20,7 +20,7 @@ function PrintPage() {
         <Button asChild variant="ghost"><Link to="/plan"><ChevronLeft /> Back</Link></Button>
         <Button onClick={() => window.print()}><Printer /> Print</Button>
       </div>
-      <h1 className="font-display text-3xl">Weeknight</h1>
+      <h1 className="font-display text-3xl">Meal Planner</h1>
       {plan && <p className="mb-4 text-sm">Week of {plan.week_start}</p>}
       {!plan ? (
         <p>No plan yet.</p>

@@ -12,7 +12,7 @@ import { DAYS, MEALS, cellKey, type Day, type Meal } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/plan")({
-  head: () => ({ meta: [{ title: "This week — Weeknight" }] }),
+  head: () => ({ meta: [{ title: "This week — Meal Planner" }] }),
   component: PlanPage,
 });
 

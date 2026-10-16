@@ -12,7 +12,7 @@ import { generatePlan } from "@/lib/ai.functions";
 import { DAYS, MEALS, upcomingMonday, type CheckInAnswers, type Day } from "@/lib/plan";
 
 export const Route = createFileRoute("/_authenticated/checkin")({
-  head: () => ({ meta: [{ title: "Weekly check-in — Weeknight" }] }),
+  head: () => ({ meta: [{ title: "Weekly check-in — Meal Planner" }] }),
   component: CheckIn,
 });
 

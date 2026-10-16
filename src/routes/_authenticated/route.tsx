@@ -24,12 +24,12 @@ const NAV = [
 
 function Layout() {
   const { pathname } = useLocation();
-  const bare = pathname === "/welcome" || pathname === "/print";
+  const bare = pathname === "/welcome" || pathname === "/print" || pathname === "/grocery-print";
   return (
     <div className="min-h-screen pb-24">
       {!bare && (
         <header className="print-hide mx-auto flex max-w-3xl items-center justify-between px-5 pt-5">
-          <Link to="/plan" className="font-display text-2xl text-primary">Weeknight</Link>
+          <Link to="/plan" className="font-display text-2xl text-primary">Meal Planner</Link>
           <button
             onClick={() => supabase.auth.signOut()}
             className="grid size-11 place-items-center rounded-xl text-muted-foreground hover:bg-muted"

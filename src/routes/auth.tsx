@@ -9,10 +9,10 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Weeknight" },
-      { name: "description", content: "Sign in or create your Weeknight account." },
-      { property: "og:title", content: "Sign in — Weeknight" },
-      { property: "og:description", content: "Sign in or create your Weeknight account." },
+      { title: "Sign in — Meal Planner" },
+      { name: "description", content: "Sign in or create your Meal Planner account." },
+      { property: "og:title", content: "Sign in — Meal Planner" },
+      { property: "og:description", content: "Sign in or create your Meal Planner account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -56,7 +56,7 @@ function AuthPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-12">
-      <p className="text-sm font-semibold uppercase tracking-widest text-primary">Weeknight</p>
+      <p className="text-sm font-semibold uppercase tracking-widest text-primary">Meal Planner</p>
       <h1 className="mt-2 font-display text-4xl">{mode === "in" ? "Welcome back" : "Create account"}</h1>
       <form onSubmit={submit} className="surface mt-8 space-y-4 p-6">
         <div className="space-y-2">
