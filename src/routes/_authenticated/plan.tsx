@@ -391,7 +391,7 @@ function PlanPage() {
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto overscroll-contain p-5">
-            {nowRecipe?.image_url && <SignedImage path={nowRecipe.image_url} alt={nowRecipe.name} />}
+            {nowRecipe?.imageSrc && <img src={nowRecipe.imageSrc} alt={nowRecipe.name} className="mb-4 aspect-[4/3] w-full rounded-xl object-cover" />}
             <section>
               <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
               <ul className="mt-2 list-disc space-y-1 pl-5">
