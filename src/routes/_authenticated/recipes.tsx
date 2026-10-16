@@ -81,16 +81,12 @@ function RecipesPage() {
   const [viewing, setViewing] = useState<Recipe | null>(null);
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const paramRecipe = search.recipe ? (recipes.find((x) => x.id === search.recipe) ?? null) : null;
+  const shown = viewing ?? paramRecipe;
   const closeViewing = () => {
     setViewing(null);
     if (search.recipe) navigate({ search: { recipe: undefined }, replace: true });
   };
-  useEffect(() => {
-    if (search.recipe && !viewing) {
-      const r = recipes.find((x) => x.id === search.recipe);
-      if (r) setViewing(r);
-    }
-  }, [search.recipe, recipes, viewing]);
   const [deleting, setDeleting] = useState<Recipe | null>(null);
 
   const filtered = useMemo(() => {
