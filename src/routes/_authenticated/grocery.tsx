@@ -5,6 +5,7 @@ import { Copy, Printer, RefreshCw, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ListSkeleton, CookingLoader } from "@/components/Loading";
 import { ShareMenu } from "@/components/ShareMenu";
 import { supabase } from "@/integrations/supabase/client";
 import { buildGroceryPdf } from "@/lib/pdf";
@@ -63,7 +64,7 @@ function GroceryPage() {
   }
 
 
-  if (isLoading) return <main className="mx-auto max-w-xl px-5 pt-6 text-muted-foreground">Loading…</main>;
+  if (isLoading) return <main className="mx-auto max-w-xl px-5 pt-6"><ListSkeleton label="Loading grocery list" /></main>;
   if (!plan)
     return (
       <main className="mx-auto max-w-xl px-5 pt-6">
@@ -97,7 +98,7 @@ function GroceryPage() {
         <Button variant="outline" size="icon" onClick={() => rebuild()} aria-label="Rebuild list"><RefreshCw /></Button>
       </div>
       {!items ? (
-        <p className="mt-8 text-muted-foreground">Building list…</p>
+        listQ.isLoading ? <ListSkeleton label="Loading grocery list" /> : <CookingLoader task="grocery" className="mt-6" />
       ) : items.length === 0 ? (
         <p className="surface mt-6 p-6 text-muted-foreground">Nothing to buy — you're all set.</p>
       ) : (

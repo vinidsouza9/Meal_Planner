@@ -1,3 +1,4 @@
+import { LoadingButton } from "@/components/Loading";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
@@ -173,9 +174,9 @@ function AuthPage() {
         {errs.form && (
           <p role="alert" className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive">{errs.form}</p>
         )}
-        <Button type="submit" size="lg" className="w-full" disabled={busy}>
-          {busy ? "Please wait…" : mode === "in" ? "Log in" : "Sign up"}
-        </Button>
+        <LoadingButton type="submit" size="lg" className="w-full" loading={busy} loadingText={mode === "in" ? "Logging in..." : "Signing up..."}>
+          {mode === "in" ? "Log in" : "Sign up"}
+        </LoadingButton>
       </form>
       <button type="button" onClick={() => switchMode(mode === "in" ? "up" : "in")} className="mt-6 min-h-11 text-sm font-medium text-primary">
         {mode === "in" ? "New here? Create an account" : "Already have an account? Log in"}

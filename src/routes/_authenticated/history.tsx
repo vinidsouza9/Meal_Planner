@@ -4,6 +4,7 @@ import { ChevronDown, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { AISLES, DAYS, MEALS, buildGrocery, dayDateLabel, weekRangeLabel } from "@/lib/plan";
+import { CardsSkeleton } from "@/components/Loading";
 import { allRecipesQuery, recentPlansQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/history")({
@@ -20,7 +21,7 @@ function HistoryPage() {
     <main className="mx-auto max-w-4xl px-5 pt-6">
       <h1 className="font-display text-3xl">History</h1>
       {isLoading ? (
-        <p className="mt-8 text-muted-foreground">Loading…</p>
+        <CardsSkeleton count={2} label="Loading past plans" />
       ) : plans.length === 0 ? (
         <div className="surface mt-6 p-8 text-center text-muted-foreground">Your past plans will show up here.</div>
       ) : (

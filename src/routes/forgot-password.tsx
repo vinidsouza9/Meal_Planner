@@ -1,3 +1,4 @@
+import { LoadingButton } from "@/components/Loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
@@ -64,7 +65,7 @@ function ForgotPage() {
               <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!err} aria-describedby="email-err" className="h-12 rounded-xl" />
               <FieldError id="email-err">{err}</FieldError>
             </div>
-            <Button type="submit" size="lg" className="w-full" disabled={busy}>{busy ? "Sending…" : "Send reset link"}</Button>
+            <LoadingButton type="submit" size="lg" className="w-full" loading={busy} loadingText="Sending...">Send reset link</LoadingButton>
           </form>
           <Link to="/auth" className="mt-6 min-h-11 text-center text-sm font-medium text-primary">Back to log in</Link>
         </>

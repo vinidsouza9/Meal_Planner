@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { ShareMenu } from "@/components/ShareMenu";
+import { CookingLoader, PlanGridSkeleton, useSlowAction } from "@/components/Loading";
 import { supabase } from "@/integrations/supabase/client";
 import { suggestSwap } from "@/lib/ai.functions";
 import { buildPlanPdf } from "@/lib/pdf";
@@ -112,7 +113,8 @@ function PlanPage() {
   const { data: weekPlan } = useQuery({ ...planForWeekQuery(week ?? ""), enabled: !!week });
   const plan = weekStart ? (weekPlan ?? null) : (latest ?? null);
   const [sel, setSel] = useState<{ day: Day; meal: Meal } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const swapTask = useSlowAction();
+  const busy = swapTask.active;
   const [active, setActive] = useState<CellInfo | null>(null);
   const [mobileDay, setMobileDay] = useState<Day>("Mon");
   const sensors = useSensors(
@@ -126,7 +128,7 @@ function PlanPage() {
     if (!weekStart && latest) setWeekStart(latest.week_start);
   }, [latest, weekStart]);
 
-  if (isLoading) return <main className="mx-auto max-w-3xl px-5 pt-6 text-muted-foreground">Loading…</main>;
+  if (isLoading) return <main className="mx-auto max-w-6xl px-5 pt-6"><PlanGridSkeleton /></main>;
 
   if (!latest) {
     return (
@@ -214,18 +216,14 @@ function PlanPage() {
 
   async function doSwap() {
     if (!sel || !plan) return;
-    setBusy(true);
-    try {
-      const r = await swap({ data: { planId: plan.id, day: sel.day, meal: sel.meal } });
-      toast.success(`Swapped in ${r.name}`);
+    const target = { planId: plan.id, day: sel.day, meal: sel.meal };
+    await swapTask.run(async () => {
+      const r = await swap({ data: target });
       await qc.invalidateQueries({ queryKey: ["plan"] });
       qc.invalidateQueries({ queryKey: ["grocery"] });
+      toast.success(`Swapped in ${r.name}`);
       setSel(null);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Swap failed");
-    } finally {
-      setBusy(false);
-    }
+    });
   }
 
   const curMobile = shownDays.includes(mobileDay) ? mobileDay : shownDays[0]!;
@@ -340,22 +338,26 @@ function PlanPage() {
         </>
       )}
 
-      <Drawer open={!!sel} onOpenChange={(o) => !o && setSel(null)}>
+      <Drawer open={!!sel} onOpenChange={(o) => { if (!o) { setSel(null); swapTask.reset(); } }}>
         <DrawerContent>
           <div className="mx-auto w-full max-w-md px-5 pb-8">
             <DrawerHeader className="px-0 text-left">
               <DrawerDescription className="capitalize">{sel?.day} · {sel?.meal}</DrawerDescription>
               <DrawerTitle className="font-display text-2xl">{selInfo?.recipe?.name ?? ""}</DrawerTitle>
             </DrawerHeader>
+            {busy ? (
+              <CookingLoader task="other" error={swapTask.error} onRetry={swapTask.retry} onCancel={swapTask.reset} />
+            ) : (
             <div className="grid gap-3">
-              <Button size="lg" onClick={doSwap} disabled={busy || !!selInfo?.locked}>
-                {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              <Button size="lg" onClick={doSwap} disabled={!!selInfo?.locked}>
+                <Sparkles />
                 {selInfo?.locked ? "Unlock to swap" : "Swap for something else"}
               </Button>
               <Button size="lg" variant="outline" onClick={toggleLock} disabled={busy}>
                 {selInfo?.locked ? <><Unlock /> Unlock</> : <><Lock /> Lock this meal</>}
               </Button>
             </div>
+            )}
           </div>
         </DrawerContent>
       </Drawer>
