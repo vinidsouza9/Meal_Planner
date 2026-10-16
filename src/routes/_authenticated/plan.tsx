@@ -345,7 +345,8 @@ function PlanPage() {
           {nowSlot && (
             <section aria-label="Current meal" aria-live="polite" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-card">
               <div className="min-w-0">
-                <p className="font-semibold">{nowRecipe?.name ?? "No meal planned"}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Now cooking</p>
+                <p className="mt-1 font-semibold">{nowRecipe?.name ?? "No meal planned"}</p>
                 {nowRecipe && <p className="mt-1 text-sm text-muted-foreground">{nowRecipe.cook_time} min</p>}
               </div>
                {nowRecipe && <Button asChild variant="outline">
