@@ -29,7 +29,7 @@ const NAV = [
   { to: "/grocery", label: "Groceries", icon: ShoppingBasket },
 ] as const;
 
-function UserMenu({ email, firstName, avatar }: { email: string; firstName: string; avatar?: string | null }) {
+function UserMenu({ email, fullName, firstName, avatar }: { email: string; fullName: string; firstName: string; avatar?: string | null }) {
   const navigate = useNavigate();
   const initial = (firstName[0] || email[0] || "?").toUpperCase();
   return (
@@ -44,7 +44,8 @@ function UserMenu({ email, firstName, avatar }: { email: string; firstName: stri
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{firstName || initial}</DropdownMenuLabel>
+        <DropdownMenuLabel className="truncate text-sm font-semibold text-foreground">{fullName}</DropdownMenuLabel>
+        <p className="truncate px-2 pb-1 text-xs text-muted-foreground">{email}</p>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link to="/account"><UserRound /> Account</Link>
@@ -66,6 +67,8 @@ function Layout() {
   const { pathname } = useLocation();
   const bare = pathname === "/welcome" || pathname === "/print" || pathname === "/grocery-print";
   const { data: profile } = useQuery(profileQuery);
+  const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ");
+
   const [menuOpen, setMenuOpen] = useState(false);
 
 
@@ -94,7 +97,7 @@ function Layout() {
             </nav>
 
             <div className="flex items-center gap-2">
-              <UserMenu email={profile?.email ?? ""} firstName={profile?.first_name ?? ""} avatar={profile?.avatarSrc ?? null} />
+              <UserMenu email={profile?.email ?? ""} fullName={fullName} firstName={profile?.first_name ?? ""} avatar={profile?.avatarSrc ?? null} />
               <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger asChild>
                   <button className="grid size-11 place-items-center rounded-xl text-foreground hover:bg-muted md:hidden" aria-label="Open menu">

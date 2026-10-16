@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { ImagePlus, Trash2 } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { profileQuery } from '@/lib/profile';
@@ -77,14 +77,36 @@ function Account() {
   if (!profile) return <main className="mx-auto max-w-xl px-5 py-8"><p role="alert">Couldn't load your account.</p><Button onClick={() => qc.invalidateQueries({ queryKey: ['profile'] })}>Try again</Button></main>;
   return <main className="mx-auto max-w-xl space-y-8 px-5 py-8">
     <h1 className="font-display text-3xl">Account</h1>
-    <section className="space-y-4"><h2 className="font-semibold">Profile photo</h2><div className="flex flex-wrap items-center gap-4">
-      {profile.avatarSrc ? <img src={profile.avatarSrc} alt={`${profile.first_name || 'Your'} profile photo`} className="size-24 rounded-full object-cover" /> : <span className="grid size-24 place-items-center rounded-full bg-primary font-display text-3xl text-primary-foreground">{(profile.first_name[0] || profile.email[0] || '?').toUpperCase()}</span>}
-      <div className="flex flex-wrap gap-2"><Button variant="outline" asChild><label><ImagePlus />Upload photo<input type="file" accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif" className="sr-only" aria-label="Upload profile photo" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} /></label></Button>
-      {profile.avatar_url && <><Button variant="outline" onClick={adjust}>Adjust photo</Button><Button variant="ghost" onClick={remove} disabled={busy}><Trash2 />Remove photo</Button></>}</div>
-    </div></section>
-    <form onSubmit={save} className="space-y-4"><div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="account-first">First name</Label><Input id="account-first" required maxLength={100} autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="account-last">Last name</Label><Input id="account-last" required maxLength={100} autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)} /></div></div>
-    <div className="space-y-2"><Label htmlFor="account-email">Email</Label><Input id="account-email" readOnly value={profile.email} /><p className="text-sm text-muted-foreground">Email can't be changed.</p></div><LoadingButton type="submit" loading={busy} loadingText="Saving...">Save</LoadingButton></form>
-    <section className="border-t pt-6"><LoadingButton variant="outline" onClick={reset} loading={resetBusy} loadingText="Sending...">Send password reset email</LoadingButton></section>
+    <section className="space-y-3 text-center">
+      <h2 className="font-semibold">Profile photo</h2>
+      <div className="relative mx-auto w-fit">
+        {profile.avatarSrc ? <img src={profile.avatarSrc} alt={`${profile.first_name || 'Your'} profile photo`} className="size-24 rounded-full object-cover" /> : <span className="grid size-24 place-items-center rounded-full bg-primary font-display text-3xl text-primary-foreground">{(profile.first_name[0] || profile.email[0] || '?').toUpperCase()}</span>}
+        <label className="absolute -bottom-1 -right-1 grid size-9 cursor-pointer place-items-center rounded-full border bg-card text-primary shadow-sm transition-colors hover:bg-muted" title="Change photo">
+          <Pencil className="size-4" aria-hidden="true" />
+          <input type="file" accept="image/jpeg,image/png,image/heic,image/heif,.heic,.heif" className="sr-only" aria-label="Change profile photo" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
+        </label>
+      </div>
+      {profile.avatar_url && <div className="flex justify-center gap-4 text-sm">
+        <button type="button" onClick={adjust} className="text-primary underline underline-offset-2">Adjust photo</button>
+        <button type="button" onClick={remove} disabled={busy} className="text-muted-foreground underline underline-offset-2">Remove photo</button>
+      </div>}
+    </section>
+    <form onSubmit={save} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="account-first">First name</Label><Input id="account-first" required maxLength={100} autoComplete="given-name" value={first} onChange={(e) => setFirst(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="account-last">Last name</Label><Input id="account-last" required maxLength={100} autoComplete="family-name" value={last} onChange={(e) => setLast(e.target.value)} /></div></div>
+      <div className="space-y-2">
+        <Label htmlFor="account-email">Email</Label>
+        <Input id="account-email" disabled aria-disabled="true" className="cursor-not-allowed bg-muted/50" value={profile.email} />
+        <p className="text-sm text-muted-foreground">This is the address you signed up with and can't be changed.</p>
+      </div>
+      <LoadingButton type="submit" loading={busy} loadingText="Saving...">Save</LoadingButton>
+    </form>
+    <section className="flex flex-wrap items-center justify-between gap-4 border-t pt-6">
+      <div>
+        <h2 className="font-semibold">Password</h2>
+        <p className="text-sm text-muted-foreground">We'll email you a secure link to set a new one.</p>
+      </div>
+      <LoadingButton variant="outline" onClick={reset} loading={resetBusy} loadingText="Sending...">Reset password</LoadingButton>
+    </section>
     {editor && <PhotoEditor src={editor.src} kind="avatar" initial={editor.crop ?? null} onSave={savePhoto} onCancel={close} />}
   </main>;
 }
