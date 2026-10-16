@@ -16,7 +16,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { ChevronLeft, ChevronRight, Clock, Flame, GripVertical, Loader2, Lock, Printer, RefreshCw, ShoppingBasket, Sparkles, Unlock, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, GripVertical, Lock, Printer, RefreshCw, ShoppingBasket, Sparkles, Unlock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -25,7 +25,7 @@ import { CookingLoader, PlanGridSkeleton, useSlowAction } from "@/components/Loa
 import { supabase } from "@/integrations/supabase/client";
 import { suggestSwap } from "@/lib/ai.functions";
 import { buildPlanPdf } from "@/lib/pdf";
-import { DAYS, MEALS, cellKey, currentCookingSlot, dayDateLabel, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
+import { DAYS, MEALS, cellKey, cookingRecipe, currentCookingSlot, dayDateLabel, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery, planForWeekQuery, type PlanRow } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/plan")({
@@ -125,10 +125,6 @@ function PlanPage() {
     const timer = window.setInterval(update, 60_000);
     return () => window.clearInterval(timer);
   }, []);
-  const { data: todayPlan, isLoading: todayLoading } = useQuery({
-    ...planForWeekQuery(nowSlot?.weekStart ?? ""),
-    enabled: !!nowSlot,
-  });
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
@@ -240,8 +236,7 @@ function PlanPage() {
 
   const curMobile = shownDays.includes(mobileDay) ? mobileDay : shownDays[0]!;
   const wk = plan?.week_start ?? week!;
-  const todayCell = nowSlot ? todayPlan?.plan_json.days.find((day) => day.day === nowSlot.day)?.[nowSlot.meal] : null;
-  const nowRecipe = todayCell?.recipe_id ? byId.get(todayCell.recipe_id) : null;
+  const nowRecipe = nowSlot && plan ? cookingRecipe(plan.plan_json, recipes, nowSlot) : undefined;
 
   return (
     <main className="mx-auto max-w-6xl px-5 pt-6">
@@ -348,24 +343,15 @@ function PlanPage() {
           </DndContext>
 
           {nowSlot && (
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-primary bg-card p-4 shadow-card">
-              <div className="flex items-center gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground">
-                  <Flame className="size-5" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Now cooking · {nowSlot.day} {nowSlot.meal}
-                  </p>
-                  <p className="font-semibold">
-                     {nowRecipe ? <>{nowRecipe.name} <span className="text-sm font-normal text-muted-foreground">· {nowRecipe.cook_time} min</span></> : todayLoading ? "Checking today's meal…" : "No meal planned for today"}
-                  </p>
-                </div>
+            <section aria-label="Current meal" aria-live="polite" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-card">
+              <div className="min-w-0">
+                <p className="font-semibold">{nowRecipe?.name ?? "No meal planned"}</p>
+                {nowRecipe && <p className="mt-1 text-sm text-muted-foreground">{nowRecipe.cook_time} min</p>}
               </div>
                {nowRecipe && <Button asChild variant="outline">
                 <Link to="/recipes" search={{ recipe: nowRecipe.id }}>View recipe</Link>
                </Button>}
-            </div>
+            </section>
           )}
 
         </>

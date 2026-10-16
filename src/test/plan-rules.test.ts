@@ -1,17 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { DAYS, currentCookingSlot, dayDateLabel, groceryText, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type CheckInAnswers, type PlanJson, type Recipe } from "@/lib/plan";
+import { DAYS, cookingRecipe, currentCookingSlot, dayDateLabel, groceryText, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type CheckInAnswers, type PlanJson, type Recipe } from "@/lib/plan";
 
 const c = (id: string) => ({ recipe_id: id, leftover: false });
 
 describe("today's cooking slot", () => {
-  it("uses the local day and current week rather than an upcoming plan's week", () => {
-    expect(currentCookingSlot(new Date(2026, 9, 16, 15, 14))).toEqual({ day: "Fri", meal: "dinner", weekStart: "2026-10-12" });
+  it("uses the local weekday", () => {
+    expect(currentCookingSlot(new Date(2026, 9, 16, 15, 23))).toEqual({ day: "Fri", meal: "lunch" });
   });
-  it("selects breakfast before 11, lunch until 15, then dinner", () => {
+  it("selects breakfast before 11", () => {
     expect(currentCookingSlot(new Date(2026, 9, 16, 10, 59)).meal).toBe("breakfast");
+  });
+  it("selects lunch from 11 until 16", () => {
     expect(currentCookingSlot(new Date(2026, 9, 16, 11, 0)).meal).toBe("lunch");
-    expect(currentCookingSlot(new Date(2026, 9, 16, 14, 59)).meal).toBe("lunch");
-    expect(currentCookingSlot(new Date(2026, 9, 16, 15, 0)).meal).toBe("dinner");
+    expect(currentCookingSlot(new Date(2026, 9, 16, 15, 59)).meal).toBe("lunch");
+  });
+  it("selects dinner from 16 onward", () => {
+    expect(currentCookingSlot(new Date(2026, 9, 16, 16, 0)).meal).toBe("dinner");
+    expect(currentCookingSlot(new Date(2026, 9, 16, 23, 59)).meal).toBe("dinner");
+  });
+  it("shows Green Chicken from the displayed calendar's Friday dinner", () => {
+    const displayedPlan: PlanJson = { days: [{ day: "Fri", breakfast: c(""), lunch: c("butter"), dinner: c("green") }] };
+    const recipes = [{ id: "green", name: "Green Chicken", cook_time: 35 }, { id: "butter", name: "Butter Chicken", cook_time: 40 }] as Recipe[];
+    const result = cookingRecipe(displayedPlan, recipes, currentCookingSlot(new Date(2026, 9, 16, 16, 0)));
+    expect(result?.name).toBe("Green Chicken");
+    expect(result?.cook_time).toBe(35);
   });
 });
 const plan: PlanJson = {
