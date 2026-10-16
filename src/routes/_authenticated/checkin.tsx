@@ -161,7 +161,7 @@ function CheckIn() {
   if (slow.active) {
     return (
       <main className="mx-auto max-w-xl px-5 pt-10">
-        <CookingLoader task="plan" error={slow.error} onRetry={slow.retry} onCancel={slow.reset} />
+        <CookingLoader task="plan" error={slow.error} slow={slow.status === "slow"} onRetry={slow.retry} onCancel={slow.reset} />
       </main>
     );
   }

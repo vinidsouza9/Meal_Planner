@@ -143,7 +143,7 @@ function ImportPage() {
   if (slow.active) {
     return (
       <main className="mx-auto max-w-3xl px-5 pt-10">
-        <CookingLoader task="recipe" error={slow.error} onRetry={slow.retry} onCancel={slow.reset} />
+        <CookingLoader task="recipe" error={slow.error} slow={slow.status === "slow"} onRetry={slow.retry} onCancel={slow.reset} />
       </main>
     );
   }
