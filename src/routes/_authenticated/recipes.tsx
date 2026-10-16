@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Clock, Pencil, Plus, Repeat, Search, Trash2, UtensilsCrossed, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
