@@ -1,58 +1,76 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, Printer } from "lucide-react";
+import { ChevronLeft, Coffee, Printer, Salad, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DAYS, MEALS } from "@/lib/plan";
-import { allRecipesQuery, latestPlanQuery } from "@/lib/queries";
+import { DAYS, MEALS, dayDateLabel, weekRangeLabel, type Meal } from "@/lib/plan";
+import { allRecipesQuery, latestPlanQuery, planForWeekQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/print")({
+  validateSearch: (s: Record<string, unknown>) => ({ week: typeof s.week === "string" ? s.week : undefined }),
   head: () => ({ meta: [{ title: "Print plan — Meal Planner" }] }),
   component: PrintPage,
 });
 
+const MEAL_ICON: Record<Meal, typeof Coffee> = { breakfast: Coffee, lunch: Salad, dinner: UtensilsCrossed };
+const PASTEL = ["bg-pastel-peach", "bg-pastel-mint", "bg-pastel-butter", "bg-pastel-lavender"];
+
 function PrintPage() {
-  const { data: plan } = useQuery(latestPlanQuery);
+  const { week } = Route.useSearch();
+  const { data: latest } = useQuery({ ...latestPlanQuery, enabled: !week });
+  const { data: weekPlan } = useQuery({ ...planForWeekQuery(week ?? ""), enabled: !!week });
+  const plan = week ? weekPlan : latest;
   const { data: recipes = [] } = useQuery(allRecipesQuery);
-  const names = new Map(recipes.map((r) => [r.id, r.name]));
+  const byId = new Map(recipes.map((r) => [r.id, r]));
+
+  const shownDays = plan?.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
+  const shownMeals = plan?.answers?.meals.length ? MEALS.filter((m) => plan.answers!.meals.includes(m)) : MEALS;
+
   return (
-    <main className="mx-auto max-w-4xl bg-card px-6 py-8 text-foreground">
+    <main className="mx-auto max-w-4xl bg-card px-6 py-8 text-foreground print:max-w-none print:px-0 print:py-0">
       <div className="print-hide mb-6 flex justify-between">
         <Button asChild variant="ghost"><Link to="/plan"><ChevronLeft /> Back</Link></Button>
         <Button onClick={() => window.print()}><Printer /> Print</Button>
       </div>
-      <h1 className="font-display text-3xl">Meal Planner</h1>
-      {plan && <p className="mb-4 text-sm">Week of {plan.week_start}</p>}
+
+      {/* Decorative header */}
+      <div className="rounded-3xl bg-pastel-mint px-6 py-5 print:rounded-2xl">
+        <h1 className="font-display text-3xl">Meal Planner</h1>
+        {plan && <p className="mt-1 text-sm text-muted-foreground">Week of {weekRangeLabel(plan.week_start)}</p>}
+      </div>
+
       {!plan ? (
-        <p>No plan yet.</p>
+        <p className="mt-6">No plan yet.</p>
       ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr>
-              <th className="border border-foreground p-2 text-left">Day</th>
-              {MEALS.map((m) => (
-                <th key={m} className="border border-foreground p-2 text-left capitalize">{m}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {DAYS.map((d) => {
-              const row = plan.plan_json.days.find((x) => x.day === d);
-              return (
-                <tr key={d}>
-                  <td className="border border-foreground p-2 font-semibold">{d}</td>
-                  {MEALS.map((m) => {
+        <div className="mt-4 space-y-2.5">
+          {shownDays.map((d, i) => {
+            const row = plan.plan_json.days.find((x) => x.day === d);
+            return (
+              <section key={d} className={`flex gap-4 rounded-2xl px-4 py-3 ${PASTEL[i % PASTEL.length]}`}>
+                <div className="w-20 shrink-0">
+                  <p className="text-sm font-bold">{d}</p>
+                  <p className="text-xs text-muted-foreground">{dayDateLabel(plan.week_start, d).split(", ")[1]}</p>
+                </div>
+                <div className="grid flex-1 gap-2" style={{ gridTemplateColumns: `repeat(${shownMeals.length}, minmax(0, 1fr))` }}>
+                  {shownMeals.map((m) => {
                     const c = row?.[m];
+                    const Icon = MEAL_ICON[m];
                     return (
-                      <td key={m} className="border border-foreground p-2">
-                        {c?.recipe_id ? `${names.get(c.recipe_id) ?? ""}${c.leftover ? " (leftovers)" : ""}` : "—"}
-                      </td>
+                      <div key={m} className="rounded-xl bg-card/70 px-3 py-2">
+                        <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                          <Icon className="size-3" aria-hidden /> {m}
+                        </p>
+                        <p className="mt-0.5 text-sm font-medium leading-snug">
+                          {c?.recipe_id ? byId.get(c.recipe_id)?.name ?? "Removed recipe" : "—"}
+                        </p>
+                        {c?.leftover && <p className="text-[10px] text-muted-foreground">Leftovers</p>}
+                      </div>
                     );
                   })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                </div>
+              </section>
+            );
+          })}
+        </div>
       )}
     </main>
   );

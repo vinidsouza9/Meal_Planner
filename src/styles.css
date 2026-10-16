@@ -74,6 +74,10 @@
   --color-lunch-soft: var(--lunch-soft);
   --color-dinner: var(--dinner);
   --color-dinner-soft: var(--dinner-soft);
+  --color-pastel-peach: var(--pastel-peach);
+  --color-pastel-mint: var(--pastel-mint);
+  --color-pastel-butter: var(--pastel-butter);
+  --color-pastel-lavender: var(--pastel-lavender);
 }
 
 :root {
@@ -122,6 +126,11 @@
   --lunch-soft: oklch(0.94 0.05 145);
   --dinner: oklch(0.6 0.15 30);
   --dinner-soft: oklch(0.94 0.045 35);
+  /* Print-only pastels: light enough to print as soft greys in black and white. */
+  --pastel-peach: oklch(0.94 0.03 45);
+  --pastel-mint: oklch(0.95 0.03 155);
+  --pastel-butter: oklch(0.96 0.05 95);
+  --pastel-lavender: oklch(0.94 0.025 300);
   --shadow-card: 0 1px 2px oklch(0.24 0.02 150 / 0.04), 0 4px 16px oklch(0.24 0.02 150 / 0.05);
 }
 
