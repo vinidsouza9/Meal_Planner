@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated/checkin'
 import { Route as AuthenticatedGroceryRouteImport } from './routes/_authenticated/grocery'
+import { Route as AuthenticatedGroceryPrintRouteImport } from './routes/_authenticated/grocery-print'
 import { Route as AuthenticatedImportRouteImport } from './routes/_authenticated/import'
 import { Route as AuthenticatedPlanRouteImport } from './routes/_authenticated/plan'
 import { Route as AuthenticatedPrintRouteImport } from './routes/_authenticated/print'
@@ -56,6 +57,12 @@ const AuthenticatedGroceryRoute = AuthenticatedGroceryRouteImport.update({
   path: '/grocery',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGroceryPrintRoute =
+  AuthenticatedGroceryPrintRouteImport.update({
+    id: '/grocery-print',
+    path: '/grocery-print',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedImportRoute = AuthenticatedImportRouteImport.update({
   id: '/import',
   path: '/import',
@@ -89,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/checkin': typeof AuthenticatedCheckinRoute
   '/grocery': typeof AuthenticatedGroceryRoute
+  '/grocery-print': typeof AuthenticatedGroceryPrintRoute
   '/import': typeof AuthenticatedImportRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/print': typeof AuthenticatedPrintRoute
@@ -102,6 +110,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/checkin': typeof AuthenticatedCheckinRoute
   '/grocery': typeof AuthenticatedGroceryRoute
+  '/grocery-print': typeof AuthenticatedGroceryPrintRoute
   '/import': typeof AuthenticatedImportRoute
   '/plan': typeof AuthenticatedPlanRoute
   '/print': typeof AuthenticatedPrintRoute
@@ -117,6 +126,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
   '/_authenticated/grocery': typeof AuthenticatedGroceryRoute
+  '/_authenticated/grocery-print': typeof AuthenticatedGroceryPrintRoute
   '/_authenticated/import': typeof AuthenticatedImportRoute
   '/_authenticated/plan': typeof AuthenticatedPlanRoute
   '/_authenticated/print': typeof AuthenticatedPrintRoute
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/checkin'
     | '/grocery'
+    | '/grocery-print'
     | '/import'
     | '/plan'
     | '/print'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/checkin'
     | '/grocery'
+    | '/grocery-print'
     | '/import'
     | '/plan'
     | '/print'
@@ -159,6 +171,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/checkin'
     | '/_authenticated/grocery'
+    | '/_authenticated/grocery-print'
     | '/_authenticated/import'
     | '/_authenticated/plan'
     | '/_authenticated/print'
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedGroceryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/grocery-print': {
+      id: '/_authenticated/grocery-print'
+      path: '/grocery-print'
+      fullPath: '/grocery-print'
+      preLoaderRoute: typeof AuthenticatedGroceryPrintRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/import': {
       id: '/_authenticated/import'
       path: '/import'
@@ -266,6 +286,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
   AuthenticatedGroceryRoute: typeof AuthenticatedGroceryRoute
+  AuthenticatedGroceryPrintRoute: typeof AuthenticatedGroceryPrintRoute
   AuthenticatedImportRoute: typeof AuthenticatedImportRoute
   AuthenticatedPlanRoute: typeof AuthenticatedPlanRoute
   AuthenticatedPrintRoute: typeof AuthenticatedPrintRoute
@@ -276,6 +297,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
   AuthenticatedGroceryRoute: AuthenticatedGroceryRoute,
+  AuthenticatedGroceryPrintRoute: AuthenticatedGroceryPrintRoute,
   AuthenticatedImportRoute: AuthenticatedImportRoute,
   AuthenticatedPlanRoute: AuthenticatedPlanRoute,
   AuthenticatedPrintRoute: AuthenticatedPrintRoute,
