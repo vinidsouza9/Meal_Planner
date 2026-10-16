@@ -120,6 +120,7 @@ function PlanPage() {
   const [active, setActive] = useState<CellInfo | null>(null);
   const [mobileDay, setMobileDay] = useState<Day>("Mon");
   const [nowSlot, setNowSlot] = useState<ReturnType<typeof currentCookingSlot> | null>(null);
+  const [showRecipe, setShowRecipe] = useState(false);
   useEffect(() => {
     const update = () => setNowSlot(currentCookingSlot());
     update();
@@ -380,6 +381,32 @@ function PlanPage() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <Sheet open={showRecipe} onOpenChange={setShowRecipe}>
+        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+          <SheetHeader className="border-b p-5 text-left">
+            <SheetTitle className="font-display text-2xl">{nowRecipe?.name}</SheetTitle>
+            <SheetDescription className="capitalize">
+              {nowRecipe?.cook_time} min{nowSlot ? ` · ${nowSlot.meal}` : ""}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto overscroll-contain p-5">
+            {nowRecipe?.image_url && <SignedImage path={nowRecipe.image_url} alt={nowRecipe.name} />}
+            <section>
+              <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Ingredients</h3>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {nowRecipe?.ingredients.map((i) => <li key={i}>{i}</li>)}
+              </ul>
+            </section>
+            {nowRecipe?.steps && (
+              <section className="mt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-widest text-primary">Steps</h3>
+                <p className="mt-2 whitespace-pre-line text-sm">{nowRecipe.steps}</p>
+              </section>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </main>
   );
 }
