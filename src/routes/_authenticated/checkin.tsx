@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Loader2, Plus, Sparkles, X } from "lucide-react";
+import { ChevronLeft, Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { CookingLoader, useSlowAction } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
