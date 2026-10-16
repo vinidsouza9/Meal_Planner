@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] 1–6 attached updates: multi-meal recipes, single-page Plan my week, pastel planner, restrained print, unique saved weeks
+- [ ] 7–11 attached updates: required signup names, account page, avatar, personalized header, Vineeta account
+- [ ] 12. Photo editor: crop/zoom/rotate, originals retained, adjust recipe and avatar photos, verify touch/keyboard and saved images
+
 - [x] 1. Top header nav (logo, links, user menu, hamburger); remove bottom nav
 - [x] 2. Neutral planner design (grey labels, outlined tags, green accent only)
 - [x] 3. Week range + prev/next arrows + day dates (plan, print, PDF, history)

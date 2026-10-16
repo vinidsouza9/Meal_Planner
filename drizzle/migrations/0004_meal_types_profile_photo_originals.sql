@@ -1,0 +1,7 @@
+ALTER TABLE public.recipes ADD COLUMN IF NOT EXISTS meal_types text[] NOT NULL DEFAULT ARRAY['breakfast','lunch','dinner']::text[], ADD COLUMN IF NOT EXISTS original_image_url text, ADD COLUMN IF NOT EXISTS image_crop jsonb;
+UPDATE public.recipes SET meal_types = CASE WHEN meal_type = 'any' THEN ARRAY['breakfast','lunch','dinner']::text[] ELSE ARRAY[meal_type] END;
+ALTER TABLE public.recipes ADD CONSTRAINT recipes_meal_types_valid CHECK (cardinality(meal_types) > 0 AND meal_types <@ ARRAY['breakfast','lunch','dinner']::text[]);
+COMMENT ON COLUMN public.recipes.meal_type IS 'DEPRECATED: replaced by meal_types';
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS first_name text NOT NULL DEFAULT '', ADD COLUMN IF NOT EXISTS last_name text NOT NULL DEFAULT '', ADD COLUMN IF NOT EXISTS avatar_url text, ADD COLUMN IF NOT EXISTS original_avatar_url text, ADD COLUMN IF NOT EXISTS avatar_crop jsonb;
+CREATE OR REPLACE FUNCTION public.handle_new_user() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$ BEGIN INSERT INTO public.profiles (id, first_name, last_name) VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data->>'first_name',''), COALESCE(NEW.raw_user_meta_data->>'last_name','')); RETURN NEW; END; $$;
+CREATE POLICY "Own avatar files" ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text) WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);

@@ -110,22 +110,37 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_crop: Json | null
+          avatar_url: string | null
           created_at: string
+          first_name: string
           household_size: number
           id: string
+          last_name: string
           onboarded: boolean
+          original_avatar_url: string | null
         }
         Insert: {
+          avatar_crop?: Json | null
+          avatar_url?: string | null
           created_at?: string
+          first_name?: string
           household_size?: number
           id: string
+          last_name?: string
           onboarded?: boolean
+          original_avatar_url?: string | null
         }
         Update: {
+          avatar_crop?: Json | null
+          avatar_url?: string | null
           created_at?: string
+          first_name?: string
           household_size?: number
           id?: string
+          last_name?: string
           onboarded?: boolean
+          original_avatar_url?: string | null
         }
         Relationships: []
       }
@@ -135,11 +150,14 @@ export type Database = {
           cook_time: number
           created_at: string
           id: string
+          image_crop: Json | null
           image_url: string | null
           ingredients: string[]
           is_quick: boolean
           meal_type: string
+          meal_types: string[]
           name: string
+          original_image_url: string | null
           steps: string | null
           user_id: string
         }
@@ -148,11 +166,14 @@ export type Database = {
           cook_time?: number
           created_at?: string
           id?: string
+          image_crop?: Json | null
           image_url?: string | null
           ingredients?: string[]
           is_quick?: boolean
           meal_type?: string
+          meal_types?: string[]
           name: string
+          original_image_url?: string | null
           steps?: string | null
           user_id?: string
         }
@@ -161,11 +182,14 @@ export type Database = {
           cook_time?: number
           created_at?: string
           id?: string
+          image_crop?: Json | null
           image_url?: string | null
           ingredients?: string[]
           is_quick?: boolean
           meal_type?: string
+          meal_types?: string[]
           name?: string
+          original_image_url?: string | null
           steps?: string | null
           user_id?: string
         }

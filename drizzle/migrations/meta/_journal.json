@@ -29,6 +29,13 @@
       "when": 1792179276416,
       "tag": "0003_recipe_images_private_read",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792184936166,
+      "tag": "0004_meal_types_profile_photo_originals",
+      "breakpoints": true
     }
   ]
 }
