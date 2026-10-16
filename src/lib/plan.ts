@@ -26,7 +26,38 @@ export type Recipe = {
   cook_time: number;
   is_quick: boolean;
   can_repeat: boolean;
+  meal_type: MealType;
 };
+
+export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "any"] as const;
+export type MealType = (typeof MEAL_TYPES)[number];
+
+/** Swap two cells of the same meal type. Returns null if the move isn't allowed. */
+export function swapCells(plan: PlanJson, locked: string[], a: { day: Day; meal: Meal }, b: { day: Day; meal: Meal }): PlanJson | null {
+  if (a.meal !== b.meal) return null;
+  if (a.day === b.day) return null;
+  if (locked.includes(cellKey(a.day, a.meal)) || locked.includes(cellKey(b.day, b.meal))) return null;
+  const ca = plan.days.find((d) => d.day === a.day)?.[a.meal];
+  const cb = plan.days.find((d) => d.day === b.day)?.[b.meal];
+  if (!ca || !cb) return null;
+  // A moved meal is freshly cooked where it lands, so the leftover flag is dropped.
+  return {
+    days: plan.days.map((d) =>
+      d.day === a.day ? { ...d, [a.meal]: { recipe_id: cb.recipe_id, leftover: false } } : d.day === b.day ? { ...d, [b.meal]: { recipe_id: ca.recipe_id, leftover: false } } : d,
+    ),
+  };
+}
+
+/** Plain-text grocery list grouped by aisle (unchecked items only). */
+export function groceryText(items: GroceryItem[], title?: string): string {
+  const body = AISLES.map((a) => {
+    const rows = items.filter((i) => i.aisle === a && !i.checked);
+    return rows.length ? `${a}\n${rows.map((r) => `- ${r.name} (${r.qty})`).join("\n")}` : "";
+  })
+    .filter(Boolean)
+    .join("\n\n");
+  return title ? `${title}\n\n${body}` : body;
+}
 
 export const cellKey = (day: Day, meal: Meal) => `${day}-${meal}`;
 

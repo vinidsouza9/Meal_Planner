@@ -107,7 +107,7 @@ const planZ = z.object({
 
 function libraryText(recipes: Recipe[]) {
   return recipes
-    .map((r) => `- id=${r.id} | ${r.name} | ${r.cook_time} min${r.is_quick ? " | QUICK" : ""}${r.can_repeat ? " | CAN_REPEAT" : ""}`)
+    .map((r) => `- id=${r.id} | ${r.name} | ${r.meal_type ?? "any"} | ${r.cook_time} min${r.is_quick ? " | QUICK" : ""}${r.can_repeat ? " | CAN_REPEAT" : ""}`)
     .join("\n");
 }
 
@@ -182,7 +182,7 @@ export const generatePlan = createServerFn({ method: "POST" })
         "5. If Sunday is excluded, all Sunday slots are \"\".\n" +
         "6. If leftover lunches are allowed, lunch may reuse the previous day's dinner recipe_id with leftover=true. Otherwise leftover=false everywhere.\n" +
         "7. Don't use any of last week's dishes unless marked CAN_REPEAT.\n" +
-        "8. Prefer recipes that use fridge items. Vary dishes across the week.\n" +
+        "8. Prefer recipes whose meal type matches the slot (any fits all). Prefer recipes that use fridge items. Vary dishes across the week.\n" +
         "Return exactly 7 days Mon..Sun.",
       user:
         `Library:\n${libraryText(recipes as Recipe[])}\n\n` +
@@ -249,6 +249,8 @@ export const suggestSwap = createServerFn({ method: "POST" })
     pj.days.forEach((d) => MEALS.forEach((m) => d[m]?.recipe_id && used.add(d[m].recipe_id)));
     const needsQuick = data.meal === "dinner" && !!answers?.busyDays.includes(data.day);
     const candidates = (recipes as Recipe[]).filter((r) => r.id !== current && (!needsQuick || r.is_quick));
+    const typed = candidates.filter((r) => !r.meal_type || r.meal_type === "any" || r.meal_type === data.meal);
+    if (typed.length) candidates.splice(0, candidates.length, ...typed);
     if (!candidates.length) throw new Error("No other recipe fits this slot. Add more recipes.");
 
     const out = await claudeJSON({
