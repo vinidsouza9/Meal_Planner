@@ -104,7 +104,7 @@ function ImportPage() {
     const rows = staged.map((x) => x.row);
     qc.invalidateQueries({ queryKey: ["recipes"] });
     toast.success(`Saved ${rows.length} recipe${rows.length > 1 ? "s" : ""}`);
-    navigate({ to: "/recipes" });
+    navigate({ to: "/recipes", search: { recipe: undefined } });
   }
 
   if (drafts) {

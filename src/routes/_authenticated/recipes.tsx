@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Clock, Pencil, Plus, Repeat, Search, Trash2, UtensilsCrossed, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import { allRecipesQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/recipes")({
   head: () => pageMeta("Recipes", "Browse and manage your saved recipes and recipe pictures."),
+  validateSearch: (s: Record<string, unknown>) => ({ recipe: typeof s["recipe"] === "string" ? (s["recipe"] as string) : undefined }),
   component: RecipesPage,
 });
 
@@ -78,6 +79,13 @@ function RecipesPage() {
   const [quickOnly, setQuickOnly] = useState(false);
   const [editing, setEditing] = useState<{ id?: string; draft: RecipeDraft } | null>(null);
   const [viewing, setViewing] = useState<Recipe | null>(null);
+  const search = Route.useSearch();
+  useEffect(() => {
+    if (search.recipe && !viewing) {
+      const r = recipes.find((x) => x.id === search.recipe);
+      if (r) setViewing(r);
+    }
+  }, [search.recipe, recipes, viewing]);
   const [deleting, setDeleting] = useState<Recipe | null>(null);
 
   const filtered = useMemo(() => {
