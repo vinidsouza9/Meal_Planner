@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Uploaded fixes: recipe defaults/reset, strict planning and swap tags, variety notes, recipe tags and AI button
+- [ ] Uploaded fixes: print grid, prebuilt native PDF sharing and complete PDF content
+- [ ] Uploaded fixes: investigate published AI for other users, profile creation/backfill, specific errors; verify a second account
+
 - [x] Cooking summary matches the displayed calendar: breakfast before 11, lunch until 4, dinner afterward; only dish name, time, recipe link. Verified Green Chicken dinner and recipe opening; Grocery list stays top-right.
 
 - [x] 1–6 attached updates: multi-meal recipes, single-page Plan my week, pastel planner, restrained print, unique saved weeks
