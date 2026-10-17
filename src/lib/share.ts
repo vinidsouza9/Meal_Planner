@@ -6,6 +6,7 @@ export async function shareFile(file: File, title: string): Promise<"shared" | "
       return "shared";
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return "shared";
+      throw e;
     }
   }
   return "menu";
@@ -22,14 +23,3 @@ export function downloadFile(file: File) {
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
-/** Download the PDF, then open WhatsApp Web so the user can attach it. */
-export function shareViaWhatsApp(file: File, message: string) {
-  downloadFile(file);
-  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
-}
-
-/** Download the PDF, then open the mail app with a note to attach it. */
-export function shareViaEmail(file: File, subject: string, body: string) {
-  downloadFile(file);
-  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}

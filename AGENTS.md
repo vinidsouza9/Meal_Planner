@@ -14,10 +14,11 @@
 - Hard plan rules are re-enforced in code after the model answers — the saved plan must always obey them.
 - Grocery list is computed in the browser from plan + recipes (`src/lib/plan.ts`) and cached in `grocery_lists` — deterministic, no AI cost.
 - Recipe photos are resized client-side (`src/lib/image-resize.ts`) and sent as base64 to `parseRecipePhotosWithAI` — keeps payloads small and the AI key server-side.
-- Plan drag-and-drop swaps go through `swapCells` in `src/lib/plan.ts` (any two cells, never locked cells) and save directly to `plans` — rule lives in one tested helper. `longDinnerOnBusyDay` in the same file decides the busy-day dinner warning toast.
+- Plan drag-and-drop swaps go through `swapCells` with the recipe library in `src/lib/plan.ts` (never locked or incompatible meal slots) and save directly to `plans` — rule lives in one tested helper. `longDinnerOnBusyDay` decides the busy-day dinner warning toast.
 - Week labels come from `weekRangeLabel` / `dayDateLabel` / `shiftWeek` in `src/lib/plan.ts` — plan page, print page, history and PDFs all use them so dates stay consistent.
 - The cooking summary resolves `currentCookingSlot` against the displayed plan through `cookingRecipe` — keeps the summary consistent with the calendar without a second week fetch.
-- PDFs are built client-side with jsPDF in `src/lib/pdf.ts` (plan + grocery list); sharing goes through `src/components/ShareMenu.tsx` + `src/lib/share.ts` (native share sheet with the file, else Download/WhatsApp/Email fallbacks).
+- PDFs are prepared client-side with jsPDF when source data changes and retained in ShareMenu; native sharing starts directly from a click, with an explicit download fallback only — preserves browser user activation and prevents accidental downloads.
+- AI wire schemas omit unsupported array constraints; zod enforces them after streaming through the request-local gateway run-ID helper — avoids rejected requests while retaining validation.
 - Recipe and profile photos live in private `recipe-images` and `avatars` buckets; crop editing uses the shared PhotoEditor and browser canvas helper, saves original paths plus crop state separately, and deletes obsolete files only after row persistence succeeds — preserves re-crop quality and prevents broken photos after save failures.
 - Recipes use meal_types arrays and generated plans pass enforceMealTypes; save_week_plan atomically replaces the unique user/week row and clears its grocery cache — prevents invalid slots, duplicate weeks and stale groceries.
 - Account and header share profileQuery so saved names and signed avatar URLs refresh together — keeps personalization consistent.
