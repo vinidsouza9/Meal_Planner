@@ -4,7 +4,7 @@ import { LoadingButton, RecipeCardsSkeleton } from "@/components/Loading";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Clock, Pencil, Plus, Repeat, Search, Trash2, UtensilsCrossed, Zap } from "lucide-react";
+import { Clock, Pencil, Plus, Repeat, Search, Sparkles, Trash2, UtensilsCrossed, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,11 +150,12 @@ function RecipesPage() {
   return (
     <TooltipProvider>
       <main className="mx-auto max-w-3xl px-5 pt-6">
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <h1 className="font-display text-3xl">Recipes</h1>
-          <Button onClick={() => setEditing({ draft: emptyDraft() })}>
-            <Plus /> New
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => setEditing({ draft: emptyDraft() })}><Plus /> Add recipe</Button>
+            <Button asChild variant="outline"><Link to="/import"><Sparkles /> Add with AI</Link></Button>
+          </div>
         </div>
 
         <div className="surface mt-5 space-y-4 p-4">
@@ -233,8 +234,8 @@ function RecipesPage() {
                     <p className="pr-2 font-semibold">{r.name}</p>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
                       <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Clock className="size-3" />{r.cook_time} min</span>
-                      {r.meal_types.map((m) => <span key={m} className="rounded-full border px-2.5 py-1 capitalize text-muted-foreground">{m}</span>)}
-                      {r.is_quick && <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Zap className="size-3" />Quick</span>}
+                      {r.meal_types.map((m) => <span key={m} className={`recipe-tag-${m} rounded-full border px-2.5 py-1 capitalize`}>{m}</span>)}
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 ${r.is_quick ? "tag-quick" : "bg-muted text-muted-foreground"}`}>{r.is_quick && <Zap className="size-3" />}{r.is_quick ? "Quick" : "Full cook"}</span>
                       {r.can_repeat && <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-muted-foreground"><Repeat className="size-3" />Weekly</span>}
                     </div>
                   </div>

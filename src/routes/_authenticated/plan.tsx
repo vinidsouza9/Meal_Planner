@@ -26,7 +26,7 @@ import { CookingLoader, PlanGridSkeleton, useSlowAction } from "@/components/Loa
 import { supabase } from "@/integrations/supabase/client";
 import { suggestSwap } from "@/lib/ai.functions";
 import { buildPlanPdf } from "@/lib/pdf";
-import { DAYS, MEALS, cellKey, cookingRecipe, currentCookingSlot, dayDateLabel, longDinnerOnBusyDay, shiftWeek, swapCells, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
+import { DAYS, MEALS, cellKey, cookingRecipe, currentCookingSlot, dayDateLabel, longDinnerOnBusyDay, recipeFitsMeal, shiftWeek, swapCells, varietyNotes, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery, planForWeekQuery, type PlanRow } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/plan")({
@@ -195,7 +195,11 @@ function PlanPage() {
     const a = e.active.data.current as CellInfo;
     const b = e.over.data.current as CellInfo;
     const prev = plan.plan_json;
-    const next = swapCells(prev, plan.locked, a, b);
+    if (!recipeFitsMeal(a.recipe?.id ?? "", b.meal, recipes) || !recipeFitsMeal(b.recipe?.id ?? "", a.meal, recipes)) {
+      toast.warning("These recipes aren't tagged for the destination meals. Choose a matching meal instead.");
+      return;
+    }
+    const next = swapCells(prev, plan.locked, a, b, recipes);
     if (!next) return;
     if (await savePlan(next, prev)) {
       // A moved recipe lands in b's slot; a's recipe lands in a's old slot.
@@ -259,9 +263,9 @@ function PlanPage() {
             <Button asChild variant="outline"><Link to="/grocery"><ShoppingBasket /> Grocery list</Link></Button>
             <ShareMenu
               build={() => buildPlanPdf(plan.plan_json, recipes, plan.week_start)}
-              title="Meal plan"
-              message={`Here's our meal plan for ${weekRangeLabel(plan.week_start)}.`}
-              emailSubject={`Meal plan: ${weekRangeLabel(plan.week_start)}`}
+              cacheKey={[plan.plan_json, recipes, plan.week_start]}
+              title={`Meal plan: ${weekRangeLabel(plan.week_start)}`}
+              disabled={!recipes.length}
             />
             <Button asChild variant="outline" size="icon" aria-label="Print plan"><Link to="/print" search={{ week: plan.week_start }}><Printer /></Link></Button>
             <Button asChild variant="secondary"><Link to="/checkin"><RefreshCw /> Plan my week</Link></Button>
@@ -277,7 +281,9 @@ function PlanPage() {
         </div>
       ) : (
         <>
-          <p className="mt-3 hidden text-xs font-medium text-muted-foreground md:block">Drag any meal onto another to swap · Tap a meal for options</p>
+          <div className="mt-3 space-y-1" aria-live="polite">
+            {varietyNotes(recipes, shownMeals).map((note) => <p key={note} className="text-xs text-muted-foreground">{note}</p>)}
+          </div>
 
           <DndContext
             sensors={sensors}

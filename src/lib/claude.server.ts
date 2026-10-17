@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { createLovableAiGatewayRunIdFetch } from "./ai-run-id.server";
 
 const MODEL = "anthropic/claude-sonnet-5";
 
@@ -13,8 +14,10 @@ export async function claudeJSON<T>(opts: {
   maxTokens?: number;
 }): Promise<T> {
   const key = process.env["LOVABLE_API_KEY"];
-  if (!key) throw new Error("AI is not configured.");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/messages", {
+  if (!key) throw new Error("AI is not configured. [AI_CONFIG]");
+  const gateway = createLovableAiGatewayRunIdFetch();
+  console.info("AI request started", { model: MODEL, photos: opts.images?.length ?? 0 });
+  const res = await gateway.fetch("https://ai.gateway.lovable.dev/v1/messages", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${key}`,
@@ -43,10 +46,13 @@ export async function claudeJSON<T>(opts: {
   if (!res.ok || !res.body) {
     const body = await res.text().catch(() => "");
     console.error("Claude error", res.status, body);
-    if (res.status === 402) throw new Error("AI credits are used up. Please top up to continue.");
-    if (res.status === 429) throw new Error("AI is busy right now. Please try again in a minute.");
-    if (res.status === 403) throw new Error("AI access was denied for this request.");
-    throw new Error("The AI request failed. Please try again.");
+    let safeMessage = "";
+    try { const error = JSON.parse(body); safeMessage = error.message ?? error.error?.message ?? ""; } catch { /* Non-JSON response. */ }
+    if (safeMessage) throw new Error(`${safeMessage} [AI_${res.status}]`);
+    if (res.status === 402) throw new Error("AI credits are used up. Please top up to continue. [AI_402]");
+    if (res.status === 429) throw new Error("AI is busy right now. Please try again in a minute. [AI_429]");
+    if (res.status === 403) throw new Error("AI access was denied for this request. [AI_403]");
+    throw new Error(`The AI request could not complete. [AI_${res.status}]`);
   }
 
   const reader = res.body.getReader();
@@ -54,6 +60,7 @@ export async function claudeJSON<T>(opts: {
   let buf = "";
   let text = "";
   let stop: string | null = null;
+  let complete = false;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -66,18 +73,20 @@ export async function claudeJSON<T>(opts: {
         if (!line.startsWith("data:")) continue;
         const payload = line.slice(5).trim();
         if (!payload) continue;
-        try {
-          const ev = JSON.parse(payload);
-          if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") text += ev.delta.text;
-          if (ev.type === "message_delta" && ev.delta?.stop_reason) stop = ev.delta.stop_reason;
-          if (ev.type === "error") throw new Error(ev.error?.message ?? "AI stream error");
-        } catch (e) {
-          if (e instanceof Error && e.message.startsWith("AI")) throw e;
+        let ev;
+        try { ev = JSON.parse(payload); } catch { continue; }
+        if (ev.type === "content_block_delta" && ev.delta?.type === "text_delta") text += ev.delta.text;
+        if (ev.type === "message_delta" && ev.delta?.stop_reason) stop = ev.delta.stop_reason;
+        if (ev.type === "message_stop") complete = true;
+        if (ev.type === "error") {
+          console.error("AI stream failed", ev.error);
+          throw new Error(`${ev.error?.message ?? "AI stream interrupted."} [AI_STREAM]`);
         }
       }
     }
   }
-  if (stop === "refusal") throw new Error("The AI declined this request.");
+  if (stop === "refusal") throw new Error("The AI declined this request. [AI_REFUSAL]");
+  if (!complete) throw new Error("The AI connection ended before the answer was ready. [AI_INCOMPLETE]");
 
   let parsed: unknown;
   try {
@@ -85,12 +94,13 @@ export async function claudeJSON<T>(opts: {
     parsed = JSON.parse(cleaned);
   } catch {
     console.error("Bad JSON from Claude", text.slice(0, 500));
-    throw new Error("The AI returned an unreadable answer. Please try again.");
+    throw new Error("The AI returned an unreadable answer. [AI_JSON]");
   }
   const v = opts.validator.safeParse(parsed);
   if (!v.success) {
     console.error("Validation failed", v.error.issues);
-    throw new Error("The AI answer didn't match the expected format. Please try again.");
+    throw new Error("The AI answer didn't match the expected format. [AI_FORMAT]");
   }
+  console.info("AI request completed", { runId: gateway.getRunId(), model: MODEL });
   return v.data;
 }

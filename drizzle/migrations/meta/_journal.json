@@ -50,6 +50,13 @@
       "when": 1792185179644,
       "tag": "0006_clarify_week_save_variable",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792206507945,
+      "tag": "0007_manual_recipe_default_dinner",
+      "breakpoints": true
     }
   ]
 }

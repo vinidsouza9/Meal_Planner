@@ -58,7 +58,8 @@ export function buildPlanPdf(plan: PlanJson, recipes: Recipe[], weekStart: strin
     const y = top + r * rowH;
     d.setDrawColor(220, 220, 220);
     d.setLineWidth(0.5);
-    d.line(32, y + rowH - 8, W - 32, y + rowH - 8);
+    d.rect(32, y, 92, rowH);
+    MEALS.forEach((_, i) => d.rect(124 + i * colW, y, colW, rowH));
 
     // Day + date
     d.setFont("helvetica", "bold");
@@ -90,7 +91,9 @@ export function buildPlanPdf(plan: PlanJson, recipes: Recipe[], weekStart: strin
       }
       const name = byId.get(c.recipe_id)?.name ?? "Removed recipe";
       const lines = d.splitTextToSize(name, colW - 18) as string[];
-      d.text(lines.slice(0, 2), x, y + 22);
+      const fontSize = Math.max(5, Math.min(10, (rowH - 30) / Math.max(lines.length * 1.15, 1)));
+      d.setFontSize(fontSize);
+      d.text(d.splitTextToSize(name, colW - 18), x, y + 22);
       if (c.leftover) {
         d.setFontSize(8);
         d.setTextColor(...GREEN);
@@ -98,6 +101,11 @@ export function buildPlanPdf(plan: PlanJson, recipes: Recipe[], weekStart: strin
       }
     });
   });
+
+  d.setDrawColor(200, 200, 200);
+  d.setLineWidth(0.8);
+  d.rect(32, top - 24, 92, 24);
+  MEALS.forEach((_, i) => d.rect(124 + i * colW, top - 24, colW, 24));
 
   d.setFont("helvetica", "normal");
   d.setFontSize(8);
@@ -118,20 +126,18 @@ export function buildGroceryPdf(items: GroceryItem[], weekStart: string, people:
   const colX: [number, number] = [32, 32 + colW + 24];
   const colY: [number, number] = [116, 116];
 
-  const unchecked = items.filter((i) => !i.checked);
-  const list = unchecked.length ? unchecked : items;
+  const list = items;
 
   AISLES.forEach((aisle) => {
     const rows = list.filter((i) => i.aisle === aisle);
     if (!rows.length) return;
     let col = colY[0] <= colY[1] ? 0 : 1;
     let y = colY[col]!;
-    const need = 22 + rows.length * 16;
-    if (y + need > H - 40 && col === 0) {
-      col = 1;
-      y = colY[1]!;
+    let x = colX[col] ?? 32;
+    if (y > H - 70) {
+      d.addPage(); header(d, "Grocery list", `Week of ${weekRangeLabel(weekStart)} · continued`);
+      colY[0] = 116; colY[1] = 116; col = 0; y = 116; x = 32;
     }
-    const x = colX[col]! as number;
     d.setFont("helvetica", "bold");
     d.setFontSize(10);
     d.setTextColor(...GREEN);
@@ -143,18 +149,31 @@ export function buildGroceryPdf(items: GroceryItem[], weekStart: string, people:
     d.setFont("helvetica", "normal");
     d.setFontSize(10);
     rows.forEach((i) => {
-      if (y > H - 40) return;
+      d.setFontSize(10);
+      const name = d.splitTextToSize(i.name, colW - 90) as string[];
+      const quantity = d.splitTextToSize(i.qty, 65) as string[];
+      const height = Math.max(name.length, quantity.length, 1) * 12 + 6;
+      if (y + height > H - 40) {
+        if (col === 0 && colY[1] === 116) { col = 1; x = colX[1]; y = 116; }
+        else {
+          d.addPage(); header(d, "Grocery list", `Week of ${weekRangeLabel(weekStart)} · continued`);
+          colY[0] = 116; colY[1] = 116; col = 0; x = 32; y = 116;
+        }
+        d.setFont("helvetica", "bold"); d.setFontSize(10); d.setTextColor(...GREEN);
+        d.text(`${aisle.toUpperCase()} (CONTINUED)`, x, y); y += 20;
+        d.setFont("helvetica", "normal");
+      }
       d.setDrawColor(...GREY);
       d.setLineWidth(0.8);
       d.rect(x, y - 8, 9, 9, "S");
       d.setTextColor(...INK);
-      const name = d.splitTextToSize(i.name, colW - 90) as string[];
-      d.text(name[0]!, x + 16, y);
+      d.setFontSize(10);
+      d.text(name, x + 16, y);
       d.setTextColor(...GREY);
       d.setFontSize(9);
-      d.text(i.qty, x + colW - d.getTextWidth(i.qty), y);
+      d.text(quantity, x + colW - 65, y);
       d.setFontSize(10);
-      y += 16;
+      y += height;
     });
     colY[col] = y + 14;
   });

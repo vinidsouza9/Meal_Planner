@@ -115,6 +115,7 @@ export function useSlowAction() {
 
 export function friendlyError(e: unknown) {
   const msg = e instanceof Error ? e.message : "";
+  if (/\[AI_|\[NO_/i.test(msg)) return msg;
   if (!msg || /fetch|network|500|internal/i.test(msg)) return "Something went wrong on our side. Please try again.";
   return msg;
 }

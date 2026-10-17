@@ -39,7 +39,7 @@ export const emptyDraft = (): RecipeDraft => ({
   cook_time: 30,
   is_quick: false,
   can_repeat: false,
-  meal_types: [...MEAL_TYPES],
+  meal_types: ["dinner"],
   image_url: null,
 });
 

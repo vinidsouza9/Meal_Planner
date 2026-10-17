@@ -38,12 +38,13 @@ export const MEAL_TYPES = MEALS;
 export type MealType = (typeof MEAL_TYPES)[number];
 
 /** Swap any two cells (across days or meal types). Returns null if the move isn't allowed. */
-export function swapCells(plan: PlanJson, locked: string[], a: { day: Day; meal: Meal }, b: { day: Day; meal: Meal }): PlanJson | null {
+export function swapCells(plan: PlanJson, locked: string[], a: { day: Day; meal: Meal }, b: { day: Day; meal: Meal }, recipes?: Recipe[]): PlanJson | null {
   if (a.day === b.day && a.meal === b.meal) return null;
   if (locked.includes(cellKey(a.day, a.meal)) || locked.includes(cellKey(b.day, b.meal))) return null;
   const ca = plan.days.find((d) => d.day === a.day)?.[a.meal];
   const cb = plan.days.find((d) => d.day === b.day)?.[b.meal];
   if (!ca || !cb) return null;
+  if (recipes && (!recipeFitsMeal(ca.recipe_id, b.meal, recipes) || !recipeFitsMeal(cb.recipe_id, a.meal, recipes))) return null;
   // A moved meal is freshly cooked where it lands, so the leftover flag is dropped.
   return {
     days: plan.days.map((d) => {
@@ -198,8 +199,22 @@ export function enforceMealTypes(plan: PlanJson, recipes: Recipe[]): PlanJson {
     const out = { ...day };
     for (const meal of MEALS) {
       const cell = day[meal];
-      if (cell.recipe_id && !byId.get(cell.recipe_id)?.meal_types.includes(meal)) out[meal] = { recipe_id: "", leftover: false };
+      if (cell.recipe_id && !byId.get(cell.recipe_id)?.meal_types.includes(meal)) {
+        const allowed = recipes.filter((recipe) => recipe.meal_types.includes(meal));
+        const pick = allowed[DAYS.indexOf(day.day) % allowed.length];
+        if (!pick) throw new Error(`Add a ${meal} recipe before planning ${meal}. [NO_MEAL_RECIPE]`);
+        out[meal] = { recipe_id: pick.id, leftover: false };
+      }
     }
     return out;
   }) };
+}
+
+export function recipeFitsMeal(id: string, meal: Meal, recipes: Recipe[]): boolean {
+  return !id || !!recipes.find((recipe) => recipe.id === id)?.meal_types.includes(meal);
+}
+
+export function varietyNotes(recipes: Recipe[], meals: readonly Meal[]): string[] {
+  return meals.filter((meal) => recipes.filter((recipe) => recipe.meal_types.includes(meal)).length < 7)
+    .map((meal) => `Add more ${meal} recipes for more variety.`);
 }

@@ -19,7 +19,7 @@ const recipeSchemaItem = {
   required: ["name", "meal_types", "ingredients", "steps", "cook_time", "is_quick"],
   properties: {
     name: { type: "string" },
-    meal_types: { type: "array", minItems: 1, maxItems: 3, uniqueItems: true, items: { type: "string", enum: [...MEALS] } },
+    meal_types: { type: "array", items: { type: "string", enum: [...MEALS] } },
     ingredients: { type: "array", items: { type: "string" } },
     steps: { type: "string" },
     cook_time: { type: "integer" },
@@ -131,8 +131,14 @@ function enforce(plan: PlanJson, a: CheckInAnswers, recipes: Recipe[]): PlanJson
     for (const m of MEALS) {
       const c = out[m];
       const ok = a.meals.includes(m) && !a.noCookDays.includes(day) && (a.includeSunday || day !== "Sun");
-      if (!ok || !c.recipe_id || !byId.has(c.recipe_id)) out[m] = empty;
-      else out[m] = { recipe_id: c.recipe_id, leftover: m === "lunch" && a.leftoverLunch ? c.leftover : false };
+      if (!ok) { out[m] = empty; continue; }
+      const allowed = recipes.filter((r) => r.meal_types.includes(m) && (m !== "dinner" || !a.busyDays.includes(day) || (r.is_quick && r.cook_time <= 20)));
+      const recipe = byId.get(c.recipe_id);
+      if (!recipe || !allowed.some((r) => r.id === recipe.id)) {
+        const pick = allowed[DAYS.indexOf(day) % allowed.length];
+        if (!pick) throw new Error(`Add ${m === "dinner" && a.busyDays.includes(day) ? "a quick dinner" : `a ${m}`} recipe for ${day}. [NO_MEAL_RECIPE]`);
+        out[m] = { recipe_id: pick.id, leftover: false };
+      } else out[m] = { recipe_id: recipe.id, leftover: m === "lunch" && a.leftoverLunch ? c.leftover : false };
     }
     return out;
   });
@@ -172,6 +178,11 @@ export const generatePlan = createServerFn({ method: "POST" })
     const lastNames = (recipes as Recipe[]).filter((r) => lastIds.has(r.id)).map((r) => r.name);
 
     const a = data.answers;
+    for (const meal of a.meals) {
+      if (!(recipes as Recipe[]).some((recipe) => recipe.meal_types.includes(meal))) {
+        throw new Error(`Add a ${meal} recipe before planning ${meal}. [NO_MEAL_RECIPE]`);
+      }
+    }
     const raw = await claudeJSON({
       system:
         "You plan a household's week of meals using ONLY the saved recipe library (use exact ids). Rules:\n" +
@@ -181,7 +192,7 @@ export const generatePlan = createServerFn({ method: "POST" })
         "4. On no-cook days, every slot is \"\".\n" +
         "5. If Sunday is excluded, all Sunday slots are \"\".\n" +
         "6. If leftover lunches are allowed, lunch may reuse the previous day's dinner recipe_id with leftover=true. Otherwise leftover=false everywhere.\n" +
-        "7. Don't use any of last week's dishes unless marked CAN_REPEAT.\n" +
+        "7. Avoid last week's dishes unless marked CAN_REPEAT; if too few tagged recipes exist, repeat allowed recipes rather than breaking meal tags.\n" +
         "8. ONLY use recipes in slots included in their meal_types tags, including leftover lunches. Prefer recipes that use fridge items. Vary dishes across the week.\n" +
         "Return exactly 7 days Mon..Sun.",
       user:
@@ -241,7 +252,7 @@ export const suggestSwap = createServerFn({ method: "POST" })
     pj.days.forEach((d) => MEALS.forEach((m) => d[m]?.recipe_id && used.add(d[m].recipe_id)));
     const needsQuick = data.meal === "dinner" && !!answers?.busyDays.includes(data.day);
     const candidates = (recipes as Recipe[]).filter((r) => r.id !== current && r.meal_types.includes(data.meal) && (!needsQuick || r.is_quick));
-    if (!candidates.length) throw new Error("No other recipe fits this slot. Add more recipes.");
+    if (!candidates.length) throw new Error(`No other recipe is tagged for ${data.meal}${needsQuick ? " and quick enough for this busy day" : ""}. Add more recipes. [NO_SWAP_RECIPE]`);
 
     const out = await claudeJSON({
       system:

@@ -89,9 +89,8 @@ function GroceryPage() {
       <div className="mt-4 flex flex-wrap gap-2">
         <ShareMenu
           build={() => buildGroceryPdf(items ?? [], plan.week_start, people)}
-          title="Grocery list"
-          message={`Here's the grocery list for ${weekRangeLabel(plan.week_start)}.`}
-          emailSubject={`Grocery list: ${weekRangeLabel(plan.week_start)}`}
+          cacheKey={[items, plan.week_start, people]}
+          title={`Grocery list: ${weekRangeLabel(plan.week_start)}`}
           disabled={!items?.length}
         />
         <Button variant="secondary" onClick={copy} disabled={!items?.length}><Copy /> Copy</Button>

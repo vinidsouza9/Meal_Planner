@@ -1,5 +1,10 @@
 # Roadmap
 
+- [x] Uploaded fixes: recipe defaults/reset, strict generation and swap tags, variety notes, recipe tags and AI button; 28 tests pass
+- [x] Uploaded fixes: print grid, prebuilt native PDF sharing and complete PDF content; download checked, 120 grocery items retained across 3 pages
+- [x] Published AI diagnosis: unsupported maxItems schema rejected imports; corrected and verified text/photo import, saved temporary plan and AI swap in signed-in preview; owner-scoped policies and profile trigger verified, no missing profiles
+- [ ] Published second-account signup and AI checks — corrected code needs publishing and a confirmed second-account session
+
 - [x] Cooking summary matches the displayed calendar: breakfast before 11, lunch until 4, dinner afterward; only dish name, time, recipe link. Verified Green Chicken dinner and recipe opening; Grocery list stays top-right.
 
 - [x] 1–6 attached updates: multi-meal recipes, single-page Plan my week, pastel planner, restrained print, unique saved weeks

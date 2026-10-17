@@ -1,0 +1,1 @@
+ALTER TABLE public.recipes ALTER COLUMN meal_types SET DEFAULT ARRAY['dinner']::text[];
