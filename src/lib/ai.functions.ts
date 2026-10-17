@@ -178,6 +178,11 @@ export const generatePlan = createServerFn({ method: "POST" })
     const lastNames = (recipes as Recipe[]).filter((r) => lastIds.has(r.id)).map((r) => r.name);
 
     const a = data.answers;
+    for (const meal of a.meals) {
+      if (!(recipes as Recipe[]).some((recipe) => recipe.meal_types.includes(meal))) {
+        throw new Error(`Add a ${meal} recipe before planning ${meal}. [NO_MEAL_RECIPE]`);
+      }
+    }
     const raw = await claudeJSON({
       system:
         "You plan a household's week of meals using ONLY the saved recipe library (use exact ids). Rules:\n" +
