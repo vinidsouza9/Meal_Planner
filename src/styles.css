@@ -175,4 +175,12 @@
 .meal-label-dinner { color: var(--dinner); }
 .tag-quick { background-color: var(--amber-soft); color: var(--amber-foreground); }
 .tag-leftover { background-color: var(--pastel-mint); border-style: dashed; }
+.recipe-tag-breakfast { background-color: var(--breakfast-soft); color: var(--amber-foreground); }
+.recipe-tag-lunch { background-color: var(--lunch-soft); color: var(--secondary-foreground); }
+.recipe-tag-dinner { background-color: var(--dinner-soft); color: var(--dinner); }
+.print-grid { border-collapse: collapse; width: 100%; }
+.print-grid th, .print-grid td { border: 1px solid var(--border); padding: 12px; vertical-align: top; }
+.print-grid thead th { border-bottom: 2px solid var(--input); }
+.print-grid th + th, .print-grid td + td { border-left: 2px solid var(--input); }
+@media print { .print-grid { print-color-adjust: exact; -webkit-print-color-adjust: exact; } .print-grid tr { break-inside: avoid; } }
 .photo-crop .reactEasyCrop_CropArea { color: var(--primary-foreground); border-color: var(--primary-foreground); }

@@ -16,8 +16,10 @@ export function downloadFile(file: File) {
   const a = document.createElement("a");
   a.href = url;
   a.download = file.name;
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 /** Download the PDF, then open WhatsApp Web so the user can attach it. */
