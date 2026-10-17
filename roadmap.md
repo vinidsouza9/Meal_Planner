@@ -3,8 +3,8 @@
 - [x] Uploaded fixes: recipe defaults/reset, strict generation and swap tags, variety notes, recipe tags and AI button; 28 tests pass
 - [x] Uploaded fixes: print grid, prebuilt native PDF sharing and complete PDF content; download checked, 120 grocery items retained across 3 pages
 - [x] Published AI diagnosis: unsupported maxItems schema rejected imports; corrected and verified text/photo import, saved temporary plan and AI swap in signed-in preview; owner-scoped policies and profile trigger verified, no missing profiles
-- [ ] Verify text and photo AI recipe import, saving and readback with the second account; fix any reproduced other-user failures
-- [ ] Published second-account signup and AI checks — corrected code needs publishing and a confirmed second-account session
+- [x] Second-account text/photo AI imports, text save/reload, photo crop/save/reload and private image display pass in preview; temporary recipes removed, existing data untouched
+- [ ] Publish existing AI schema correction — second-account live text import still runs old maxItems schema (HTTP 400, gateway log 01a14862-4462-7efb-90fa-0e3a01b841d2 at 2026-10-17T05:42:42Z); publishing requires user action before live recheck
 
 - [x] Cooking summary matches the displayed calendar: breakfast before 11, lunch until 4, dinner afterward; only dish name, time, recipe link. Verified Green Chicken dinner and recipe opening; Grocery list stays top-right.
 
