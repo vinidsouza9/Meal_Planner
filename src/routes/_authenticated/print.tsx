@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, Coffee, Printer, Salad, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PlanGridSkeleton } from "@/components/Loading";
 import { DAYS, MEALS, dayDateLabel, weekRangeLabel, type Meal } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery, planForWeekQuery } from "@/lib/queries";
 
@@ -16,14 +17,16 @@ const MEAL_ICON: Record<Meal, typeof Coffee> = { breakfast: Coffee, lunch: Salad
 
 function PrintPage() {
   const { week } = Route.useSearch();
-  const { data: latest } = useQuery({ ...latestPlanQuery, enabled: !week });
-  const { data: weekPlan } = useQuery({ ...planForWeekQuery(week ?? ""), enabled: !!week });
+  const { data: latest, isLoading: latestLoading } = useQuery({ ...latestPlanQuery, enabled: !week });
+  const { data: weekPlan, isLoading: weekLoading } = useQuery({ ...planForWeekQuery(week ?? ""), enabled: !!week });
   const plan = week ? weekPlan : latest;
-  const { data: recipes = [] } = useQuery(allRecipesQuery);
+  const { data: recipes = [], isLoading: recipesLoading } = useQuery(allRecipesQuery);
   const byId = new Map(recipes.map((r) => [r.id, r]));
 
   const shownDays = plan?.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
   const shownMeals = plan?.answers?.meals.length ? MEALS.filter((m) => plan.answers!.meals.includes(m)) : MEALS;
+
+  if (recipesLoading || (week ? weekLoading : latestLoading)) return <main className="mx-auto max-w-4xl px-6 py-8"><PlanGridSkeleton /></main>;
 
   return (
     <main className="mx-auto max-w-4xl bg-card px-6 py-8 text-foreground print:max-w-none print:px-0 print:py-0">
