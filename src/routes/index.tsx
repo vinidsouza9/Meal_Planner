@@ -18,17 +18,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import hero from "@/assets/hero-meals.jpg";
+import dishCurry from "@/assets/dish-curry.jpg";
+import dishPasta from "@/assets/dish-pasta.jpg";
+import dishTacos from "@/assets/dish-tacos.jpg";
+import dishOats from "@/assets/dish-oats.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Meal Planner — plan your week of meals in minutes" },
+      { title: "Meal Planner: plan your week of meals in minutes" },
       {
         name: "description",
         content:
           "Add your own recipes, tell us about your week, and get a meal plan plus a grocery list sized for your household.",
       },
-      { property: "og:title", content: "Meal Planner — plan your week of meals in minutes" },
+      { property: "og:title", content: "Meal Planner: plan your week of meals in minutes" },
       {
         property: "og:description",
         content: "Your recipes, your week: a meal plan and grocery list in minutes.",
@@ -80,7 +84,7 @@ const FEATURES = [
   {
     icon: Camera,
     t: "AI recipe import",
-    d: "Paste text or upload a photo — AI turns it into a tidy recipe you can edit.",
+    d: "Paste text or upload a photo and AI turns it into a tidy recipe you can edit.",
     wash: "#F2C9A0",
   },
   {
@@ -168,21 +172,25 @@ const SAMPLE_RECIPES = [
   {
     name: "Green chicken curry",
     meta: "Dinner · 35 min",
+    img: dishCurry,
     c: ["#7DAA4F", "#F2E3C6", "#E9C46A", "#3C6E2F"],
   },
   {
     name: "Lemon chickpea pasta",
     meta: "Dinner · 20 min",
+    img: dishPasta,
     c: ["#F2D27A", "#E8B04B", "#9CC36B", "#C0392B"],
   },
   {
     name: "Black bean tacos",
     meta: "Busy-night pick · 20 min",
+    img: dishTacos,
     c: ["#E7B36A", "#3B2A2A", "#E85D3F", "#8DC26F"],
   },
   {
     name: "Overnight oats",
     meta: "Breakfast · 5 min",
+    img: dishOats,
     c: ["#EADBC4", "#C8455B", "#6A5ACD", "#F4A259"],
   },
 ];
@@ -244,8 +252,6 @@ function Index() {
 
   const primaryCta =
     "h-auto min-h-[60px] rounded-2xl bg-[#A8432E] px-7 text-lg font-bold text-white shadow-[0_8px_0_#6E2A1C] hover:bg-[#953A27] active:translate-y-1 active:shadow-[0_4px_0_#6E2A1C]";
-  const outlineCta =
-    "h-auto min-h-[60px] rounded-2xl border-2 border-[#3B2A20] bg-transparent px-6 text-[17px] font-semibold text-[#3B2A20] hover:bg-[#F6E8D2]";
 
   return (
     <div className="min-h-screen bg-[#FBF3E6] text-[#3B2A20]">
@@ -341,16 +347,13 @@ function Index() {
               </h1>
               <p className="mt-5 max-w-lg text-lg leading-relaxed text-[#5A4636]">
                 Add your own recipes, tell us about your week, and get a meal plan plus a grocery
-                list — no more 6pm "what's for dinner?".
+                list. No more 6pm "what's for dinner?".
               </p>
               <div className="mt-8 flex flex-wrap gap-3.5">
                 <Button asChild className={primaryCta}>
                   <Link to="/auth" search={{ mode: "signup" }}>
-                    Plan my week — it's free
+                    Let's get started
                   </Link>
-                </Button>
-                <Button asChild variant="outline" className={outlineCta}>
-                  <Link to="/auth">Log in</Link>
                 </Button>
               </div>
               <p className={`${HAND} mt-5 text-2xl text-[#5A4636]`}>
@@ -523,7 +526,7 @@ function Index() {
                   key={r.name}
                   className="flex flex-col gap-2.5 rounded-3xl border-2 border-[#EAD6B8] bg-[#FFFDF8] p-4"
                 >
-                  <Plate c={r.c} />
+                  <img src={r.img} alt={r.name} loading="lazy" width={944} height={704} className="h-36 w-full rounded-2xl object-cover" />
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <h3 className="font-display text-[19px] font-semibold">{r.name}</h3>
