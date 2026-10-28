@@ -218,29 +218,6 @@ function Wash({
   );
 }
 
-function Plate({ c }: { c: string[] }) {
-  return (
-    <svg viewBox="0 0 120 120" className="h-36 w-full" aria-hidden="true">
-      <g filter="url(#mp-watercolor)">
-        <circle cx="60" cy="62" r="52" fill="#F3E4CC" />
-        <circle cx="60" cy="60" r="38" fill={c[0]} opacity="0.85" />
-        <circle cx="47" cy="52" r="12" fill={c[1]} opacity="0.9" />
-        <circle cx="72" cy="66" r="13" fill={c[2]} opacity="0.85" />
-        <circle cx="64" cy="42" r="7" fill={c[3]} opacity="0.85" />
-      </g>
-      <circle
-        cx="60"
-        cy="60"
-        r="50"
-        fill="none"
-        stroke="#3B2A20"
-        strokeWidth="1.2"
-        strokeDasharray="70 8 30 6"
-      />
-    </svg>
-  );
-}
-
 function Index() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
