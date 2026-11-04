@@ -13,7 +13,7 @@ const fresh = {
 vi.mock("@/integrations/supabase/client", () => {
   const chain: Record<string, unknown> = {};
   for (const k of ["select", "order", "limit", "eq"]) chain[k] = () => chain;
-  chain.maybeSingle = async () => ({ data: fresh, error: null });
+  chain["maybeSingle"] = async () => ({ data: fresh, error: null });
   return { supabase: { from: () => chain } };
 });
 
