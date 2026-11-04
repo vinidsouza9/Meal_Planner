@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { CheckInAnswers, PlanJson, Recipe } from "./plan";
 import { signImagePaths } from "./recipe-images";
@@ -51,6 +52,23 @@ export const planForWeekQuery = (weekStart: string) => ({
     return data ? toPlanRow(data as unknown as PlanSelect) : null;
   },
 });
+
+/**
+ * After a plan is generated, drop every cached plan and load the new one before showing it,
+ * so the planner never renders the previous week's meals first.
+ */
+export async function loadFreshPlan(qc: QueryClient, weekStart: string) {
+  await Promise.all([
+    qc.cancelQueries({ queryKey: ["plan"] }),
+    qc.cancelQueries({ queryKey: ["plans"] }),
+    qc.cancelQueries({ queryKey: ["grocery"] }),
+  ]);
+  qc.removeQueries({ queryKey: ["plan"] });
+  qc.removeQueries({ queryKey: ["plans"] });
+  qc.removeQueries({ queryKey: ["grocery"] });
+  const [latest] = await Promise.all([qc.fetchQuery(latestPlanQuery), qc.fetchQuery(planForWeekQuery(weekStart))]);
+  return latest;
+}
 
 /** Most recent saved plans, newest week first (for History). */
 export const recentPlansQuery = (limit: number) => ({

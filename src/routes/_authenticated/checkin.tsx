@@ -9,6 +9,7 @@ import { CookingLoader, useSlowAction } from "@/components/Loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { profileQuery } from "@/lib/profile";
+import { loadFreshPlan } from "@/lib/queries";
 import { generatePlan } from "@/lib/ai.functions";
 import { DAYS, MEALS, upcomingMonday, weekRangeLabel, type CheckInAnswers, type Day } from "@/lib/plan";
 
@@ -153,7 +154,7 @@ function CheckIn() {
     const answers = { ...a, busyDays: a.busyDays.filter((d) => days.includes(d)), noCookDays: a.noCookDays.filter((d) => days.includes(d)) };
     await slow.run(async () => {
       await gen({ data: { weekStart: week, answers } });
-      await Promise.all([qc.invalidateQueries({ queryKey: ["plan"] }), qc.invalidateQueries({ queryKey: ["plans"] }), qc.invalidateQueries({ queryKey: ["grocery"] })]);
+      await loadFreshPlan(qc, week);
       navigate({ to: "/plan" });
     });
   }
