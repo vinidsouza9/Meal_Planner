@@ -218,3 +218,10 @@ export function varietyNotes(recipes: Recipe[], meals: readonly Meal[]): string[
   return meals.filter((meal) => recipes.filter((recipe) => recipe.meal_types.includes(meal)).length < 7)
     .map((meal) => `Add more ${meal} recipes for more variety.`);
 }
+
+/** Meal rows the planner shows: only the meals chosen in Plan my week; without saved choices, only meals that have dishes. */
+export function visibleMeals(plan: PlanJson, answers: Pick<CheckInAnswers, "meals"> | null | undefined): Meal[] {
+  if (answers?.meals.length) return MEALS.filter((m) => answers.meals.includes(m));
+  const filled = MEALS.filter((m) => plan.days.some((d) => !!d[m]?.recipe_id));
+  return filled.length ? filled : [...MEALS];
+}

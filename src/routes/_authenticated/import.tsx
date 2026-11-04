@@ -132,7 +132,7 @@ function ImportPage() {
             </div>
           ))}
         </div>
-        <div className="sticky bottom-20 mt-6 flex gap-3 bg-background/90 py-3 backdrop-blur">
+        <div className="sticky-save-bar sticky bottom-0 z-10 -mx-5 mt-6 flex gap-3 border-t bg-background px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button variant="outline" className="flex-1" onClick={() => setDrafts(null)}>Back</Button>
           <LoadingButton className="flex-1" onClick={saveAll} disabled={!drafts.length} loading={saving} loadingText="Saving...">Save all</LoadingButton>
         </div>

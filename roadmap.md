@@ -1,5 +1,8 @@
 # Roadmap
 
+- [x] Plan shows only selected meals from first render (fresh plan loaded before showing; verified lunch+dinner after a breakfast plan)
+- [x] AI import save bar docked at bottom, no overlap; every control reachable at 1280/686/390 widths
+
 - [x] Uploaded fixes: recipe defaults/reset, strict generation and swap tags, variety notes, recipe tags and AI button; 28 tests pass
 - [x] Uploaded fixes: print grid, prebuilt native PDF sharing and complete PDF content; download checked, 120 grocery items retained across 3 pages
 - [x] Published AI diagnosis: unsupported maxItems schema rejected imports; corrected and verified text/photo import, saved temporary plan and AI swap in signed-in preview; owner-scoped policies and profile trigger verified, no missing profiles

@@ -24,3 +24,4 @@
 - Account and header share profileQuery so saved names and signed avatar URLs refresh together — keeps personalization consistent.
 - Authenticated layout is a single top header in `src/routes/_authenticated/route.tsx` (nav links + user dropdown + mobile sheet); there is no bottom nav.
 - Loading UI lives in `src/components/Loading.tsx` (CookingLoader, useSlowAction, LoadingButton, skeletons) — slow actions use useSlowAction so errors/20s timeouts show one consistent "Try again" state without aborting the request.
+- After generating a plan, call `loadFreshPlan` (src/lib/queries.ts) before navigating, and pick planner rows with `visibleMeals` — the planner must never render a previously cached week or unselected meals first.
