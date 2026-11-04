@@ -26,7 +26,7 @@ import { CookingLoader, PlanGridSkeleton, useSlowAction } from "@/components/Loa
 import { supabase } from "@/integrations/supabase/client";
 import { suggestSwap } from "@/lib/ai.functions";
 import { buildPlanPdf } from "@/lib/pdf";
-import { DAYS, MEALS, cellKey, cookingRecipe, currentCookingSlot, dayDateLabel, longDinnerOnBusyDay, recipeFitsMeal, shiftWeek, swapCells, varietyNotes, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
+import { DAYS, MEALS, cellKey, cookingRecipe, currentCookingSlot, dayDateLabel, longDinnerOnBusyDay, recipeFitsMeal, shiftWeek, swapCells, varietyNotes, visibleMeals, weekRangeLabel, type Day, type Meal, type PlanJson, type Recipe } from "@/lib/plan";
 import { allRecipesQuery, latestPlanQuery, planForWeekQuery, type PlanRow } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/plan")({
@@ -112,8 +112,10 @@ function PlanPage() {
   const { data: recipes = [] } = useQuery(allRecipesQuery);
   const [weekStart, setWeekStart] = useState<string | null>(null);
   const week = weekStart ?? latest?.week_start ?? null;
-  const { data: weekPlan } = useQuery({ ...planForWeekQuery(week ?? ""), enabled: !!week });
-  const plan = weekStart ? (weekPlan ?? null) : (latest ?? null);
+  const { data: weekPlan, isPending: weekPending } = useQuery({ ...planForWeekQuery(week ?? ""), enabled: !!week });
+  const sameAsLatest = !!latest && (!weekStart || weekStart === latest.week_start);
+  const plan = sameAsLatest ? (weekPlan ?? latest ?? null) : (weekPlan ?? null);
+  const weekLoading = !sameAsLatest && !!week && weekPending;
   const [sel, setSel] = useState<{ day: Day; meal: Meal } | null>(null);
   const swapTask = useSlowAction();
   const busy = swapTask.active;
@@ -158,7 +160,7 @@ function PlanPage() {
   }
 
   const shownDays: readonly Day[] = plan?.answers && !plan.answers.includeSunday ? DAYS.filter((d) => d !== "Sun") : DAYS;
-  const shownMeals = plan?.answers?.meals.length ? MEALS.filter((m) => plan.answers!.meals.includes(m)) : MEALS;
+  const shownMeals = plan ? visibleMeals(plan.plan_json, plan.answers) : MEALS;
   const info = (day: Day, meal: Meal): CellInfo => {
     const c = plan?.plan_json.days.find((x) => x.day === day)?.[meal];
     return {
@@ -273,7 +275,9 @@ function PlanPage() {
         )}
       </div>
 
-      {!plan ? (
+      {weekLoading ? (
+        <div className="mt-6"><PlanGridSkeleton /></div>
+      ) : !plan ? (
         <div className="surface mt-6 p-8 text-center">
           <p className="font-medium">No plan for this week</p>
           <p className="mt-1 text-sm text-muted-foreground">Go back to a planned week, or plan your week.</p>
