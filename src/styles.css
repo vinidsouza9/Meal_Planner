@@ -185,4 +185,4 @@
 @media print { .print-grid { print-color-adjust: exact; -webkit-print-color-adjust: exact; } .print-grid tr { break-inside: avoid; } }
 .photo-crop .reactEasyCrop_CropArea { color: var(--primary-foreground); border-color: var(--primary-foreground); }
 /* Keep focused or scrolled-to fields clear of a page's sticky save bar. */
-html:has(.sticky-save-bar) { scroll-padding-bottom: 6rem; }
+html:has(.sticky-save-bar) { scroll-padding-top: 5rem; scroll-padding-bottom: 6rem; }
