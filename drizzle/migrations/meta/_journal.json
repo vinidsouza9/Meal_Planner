@@ -57,6 +57,13 @@
       "when": 1792206507945,
       "tag": "0007_manual_recipe_default_dinner",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794355809758,
+      "tag": "0008_ai_free_uses",
+      "breakpoints": true
     }
   ]
 }

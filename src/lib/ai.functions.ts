@@ -27,6 +27,17 @@ const recipeSchemaItem = {
   },
 };
 
+/** Free-use gate: check before the AI call, count it only after the AI succeeds. */
+async function requireAiUse(supabase: { rpc: (fn: "ai_uses_left") => PromiseLike<{ data: number | null; error: unknown }> }) {
+  const { data, error } = await supabase.rpc("ai_uses_left");
+  if (error) throw new Error("Couldn't check your AI uses. [AI_USAGE]");
+  if ((data ?? 0) <= 0) throw new Error("You've used all 3 free AI uses. Upgrade to Meal Planner Pro to keep going. [AI_LIMIT]");
+}
+async function countAiUse(supabase: { rpc: (fn: "consume_ai_use") => PromiseLike<{ error: unknown }> }) {
+  const { error } = await supabase.rpc("consume_ai_use");
+  if (error) throw new Error("You've used all 3 free AI uses. Upgrade to Meal Planner Pro to keep going. [AI_LIMIT]");
+}
+
 const RECIPE_RULES =
   "Ingredients are raw items with quantities for 2 servings (e.g. '200 g chicken thighs'). " +
   "Leave out salt, oil, water and spices — they are pantry staples. Steps are short numbered lines. " +
@@ -45,7 +56,8 @@ export const parseRecipePhotosWithAI = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requireAiUse(context.supabase);
     const out = await claudeJSON({
       system:
         "You read photos of recipes (cookbook pages, cards, screenshots, handwritten notes) and turn them into structured recipes. " +
@@ -63,13 +75,15 @@ export const parseRecipePhotosWithAI = createServerFn({ method: "POST" })
     });
     if (!out.readable || !out.recipes.length)
       throw new Error("We couldn't find a recipe in that photo. Try a clearer, well-lit shot of the recipe page.");
+    await countAiUse(context.supabase);
     return out.recipes.map((r) => ({ ...r, is_quick: r.cook_time <= 20 && r.is_quick }));
   });
 
 export const parseRecipesWithAI = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { text: string }) => z.object({ text: z.string().min(2).max(20000) }).parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await requireAiUse(context.supabase);
     const out = await claudeJSON({
       system:
         "You turn pasted recipes or lists of dish names into structured recipes for a weekly meal planner. " +
@@ -89,6 +103,7 @@ export const parseRecipesWithAI = createServerFn({ method: "POST" })
       },
       validator: z.object({ recipes: z.array(recipeOut) }),
     });
+    if (out.recipes.length) await countAiUse(context.supabase);
     return out.recipes.map((r) => ({ ...r, is_quick: r.cook_time <= 20 }));
   });
 
@@ -183,6 +198,7 @@ export const generatePlan = createServerFn({ method: "POST" })
         throw new Error(`Add a ${meal} recipe before planning ${meal}. [NO_MEAL_RECIPE]`);
       }
     }
+    await requireAiUse(supabase);
     const raw = await claudeJSON({
       system:
         "You plan a household's week of meals using ONLY the saved recipe library (use exact ids). Rules:\n" +
@@ -229,6 +245,7 @@ export const generatePlan = createServerFn({ method: "POST" })
 
     const { data: saved, error: saveErr } = await supabase.rpc("save_week_plan", { p_week: data.weekStart, p_answers: a, p_plan: plan });
     if (saveErr || !saved) throw new Error("Couldn't save the plan.");
+    await countAiUse(supabase);
     return { id: saved };
 
   });
@@ -254,6 +271,7 @@ export const suggestSwap = createServerFn({ method: "POST" })
     const candidates = (recipes as Recipe[]).filter((r) => r.id !== current && r.meal_types.includes(data.meal) && (!needsQuick || r.is_quick));
     if (!candidates.length) throw new Error(`No other recipe is tagged for ${data.meal}${needsQuick ? " and quick enough for this busy day" : ""}. Add more recipes. [NO_SWAP_RECIPE]`);
 
+    await requireAiUse(supabase);
     const out = await claudeJSON({
       system:
         "Suggest ONE replacement recipe from the candidate list for a meal slot. Use an exact id from the list. " +
@@ -276,5 +294,6 @@ export const suggestSwap = createServerFn({ method: "POST" })
     const days = pj.days.map((d) => (d.day === data.day ? { ...d, [data.meal]: { recipe_id: pick.id, leftover: false } } : d));
     const { error } = await supabase.from("plans").update({ plan_json: { days } }).eq("id", data.planId);
     if (error) throw new Error("Couldn't save the swap.");
+    await countAiUse(supabase);
     return { recipe_id: pick.id, name: pick.name };
   });

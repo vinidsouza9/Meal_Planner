@@ -1,3 +1,4 @@
+import { UpgradeDialog } from "@/components/Subscription";
 import { createFileRoute, Link, Outlet, redirect, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { BookOpen, CalendarDays, History, LogOut, Menu, Sparkles, ShoppingBasket, UserRound } from "lucide-react";
@@ -132,6 +133,7 @@ function Layout() {
       )}
       {!bare && profile && (!profile.first_name || !profile.last_name) && <div className="mx-auto max-w-6xl px-5 py-3 text-sm"><Link to="/account" className="text-primary underline">Add your name to personalize your account.</Link></div>}
       <Outlet />
+      <UpgradeDialog />
     </div>
   );
 }

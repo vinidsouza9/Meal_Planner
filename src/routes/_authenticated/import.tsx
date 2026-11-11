@@ -1,3 +1,5 @@
+import { AiUsesNote } from "@/components/Subscription";
+import { matchDishPhoto } from "@/lib/dish-photos";
 import { readablePhoto } from "@/lib/photo-crop";
 import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -22,6 +24,16 @@ export const Route = createFileRoute("/_authenticated/import")({
   head: () => pageMeta("Add recipes with AI", "Import your recipes from text or photos."),
   component: ImportPage,
 });
+
+/** Give every draft without its own picture a matching sample dish photo (user can adjust or remove it). */
+async function withDishPhotos(drafts: RecipeDraft[]): Promise<RecipeDraft[]> {
+  return Promise.all(drafts.map(async (d) => {
+    if (d.originalBlob || d.photoBlob) return d;
+    const src = matchDishPhoto(d.name, d.ingredients);
+    try { const blob = await (await fetch(src)).blob(); return { ...d, photoBlob: blob, originalBlob: blob, photoPreview: src }; }
+    catch { return d; }
+  }));
+}
 
 function ImportPage() {
   const parse = useServerFn(parseRecipesWithAI);
@@ -55,7 +67,8 @@ function ImportPage() {
     setPhotoErr(null);
     await slow.run(async () => {
       const out = await parsePhotos({ data: { images: photos.map(({ mediaType, data }) => ({ mediaType, data })) } });
-      setDrafts(out.map((r, i) => ({ ...r, can_repeat: false, image_url: null, ...(i === 0 && usePhoto && photos[0] ? { originalBlob: photos[0].original, photoPreview: photos[0].preview } : {}) })));
+      const base = out.map((r, i) => ({ ...r, can_repeat: false, image_url: null, ...(i === 0 && usePhoto && photos[0] ? { originalBlob: photos[0].original, photoPreview: photos[0].preview } : {}) }));
+      setDrafts(await withDishPhotos(base));
     });
   }
   const navigate = useNavigate();
@@ -70,7 +83,7 @@ function ImportPage() {
     await slow.run(async () => {
       const out = await parse({ data: { text } });
       if (!out.length) throw new Error("We couldn't find a recipe in that text. Try adding a dish name or ingredients.");
-      setDrafts(out.map((r) => ({ ...r, can_repeat: false, image_url: null })));
+      setDrafts(await withDishPhotos(out.map((r) => ({ ...r, can_repeat: false, image_url: null }))));
     });
   }
 
@@ -151,7 +164,8 @@ function ImportPage() {
   return (
     <main className="mx-auto max-w-3xl px-5 pt-6">
       <h1 className="font-display text-3xl">Add with AI</h1>
-      <p className="mt-1 text-muted-foreground">Paste text or snap a photo — you'll review everything before saving.</p>
+      <p className="mt-1 text-muted-foreground">Paste text or snap a photo. You'll review everything before saving.</p>
+      <AiUsesNote className="mt-1" />
       <Tabs defaultValue="text" className="mt-5">
         <TabsList className="grid h-12 w-full grid-cols-2 rounded-xl">
           <TabsTrigger value="text" className="rounded-lg">Paste text</TabsTrigger>

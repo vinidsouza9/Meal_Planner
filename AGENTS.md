@@ -25,3 +25,5 @@
 - Authenticated layout is a single top header in `src/routes/_authenticated/route.tsx` (nav links + user dropdown + mobile sheet); there is no bottom nav.
 - Loading UI lives in `src/components/Loading.tsx` (CookingLoader, useSlowAction, LoadingButton, skeletons) — slow actions use useSlowAction so errors/20s timeouts show one consistent "Try again" state without aborting the request.
 - After generating a plan, call `loadFreshPlan` (src/lib/queries.ts) before navigating, and pick planner rows with `visibleMeals` — the planner must never render a previously cached week or unselected meals first.
+- AI free uses live in `ai_usage` (read-only to users); server fns call `ai_uses_left` before and `consume_ai_use` only after AI succeeds, and `[AI_LIMIT]` errors open the shared UpgradeDialog via useSlowAction — users can't raise their own limit and failed calls aren't charged.
+- AI-imported recipes without their own photo get a keyword-matched sample dish photo from `src/lib/dish-photos.ts` — no extra AI cost.
