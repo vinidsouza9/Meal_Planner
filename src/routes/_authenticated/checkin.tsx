@@ -1,3 +1,4 @@
+import { AiUsesNote } from "@/components/Subscription";
 import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -173,7 +174,7 @@ function CheckIn() {
       <p className="mt-2 text-muted-foreground">Answer a few questions about your week and we'll build your meal plan.</p>
       <p className="mt-4 font-medium text-primary">Planning for {weekRangeLabel(week)}</p>
       <div className="mt-6 divide-y">{steps.map((section) => <section key={section.title} className="space-y-4 py-6"><h2 className="text-lg font-semibold">{section.title}</h2>{"hint" in section && section.hint && <p className="text-sm text-muted-foreground">{section.hint}</p>}{section.body}</section>)}</div>
-      <div className="sticky bottom-0 border-t bg-background/95 py-4 backdrop-blur sm:static"><Button size="lg" className="w-full" onClick={finish} disabled={!a.meals.length}><Sparkles />Generate my plan</Button></div>
+      <div className="sticky bottom-0 border-t bg-background/95 py-4 backdrop-blur sm:static"><Button size="lg" className="w-full" onClick={finish} disabled={!a.meals.length}><Sparkles />Generate my plan</Button><AiUsesNote className="mt-2 text-center" /></div>
     </main>
   );
 }

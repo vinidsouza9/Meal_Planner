@@ -1,3 +1,5 @@
+import { openUpgrade, refreshAiUses } from "@/components/Subscription";
+import { isAiLimitError } from "@/lib/ai-usage";
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { Loader2, CookingPot, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,8 +100,10 @@ export function useSlowAction() {
     try {
       const out = await fn();
       if (runId.current === id) setState({ status: "idle", error: null });
+      refreshAiUses();
       return out;
     } catch (e) {
+      if (isAiLimitError(e)) { if (runId.current === id) setState({ status: "idle", error: null }); openUpgrade(); return undefined; }
       if (runId.current === id) setState({ status: "error", error: friendlyError(e) });
       return undefined;
     } finally {

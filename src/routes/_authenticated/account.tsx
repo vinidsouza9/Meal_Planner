@@ -1,3 +1,4 @@
+import { SubscriptionCard } from '@/components/Subscription';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -107,6 +108,7 @@ function Account() {
       </div>
       <LoadingButton variant="outline" onClick={reset} loading={resetBusy} loadingText="Sending...">Reset password</LoadingButton>
     </section>
+    <SubscriptionCard />
     {editor && <PhotoEditor src={editor.src} kind="avatar" initial={editor.crop ?? null} onSave={savePhoto} onCancel={close} />}
   </main>;
 }
