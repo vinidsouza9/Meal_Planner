@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          free_limit: number
+          updated_at: string
+          used: number
+          user_id: string
+        }
+        Insert: {
+          free_limit?: number
+          updated_at?: string
+          used?: number
+          user_id: string
+        }
+        Update: {
+          free_limit?: number
+          updated_at?: string
+          used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       check_ins: {
         Row: {
           answers: Json
@@ -200,6 +221,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ai_uses_left: { Args: never; Returns: number }
+      consume_ai_use: { Args: never; Returns: number }
       save_week_plan: {
         Args: { p_answers: Json; p_plan: Json; p_week: string }
         Returns: string
